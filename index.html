@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dasbor Sinyal ICT XAUUSD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gold-gradient-text {
+            background: -webkit-linear-gradient(45deg, #FDE047, #FBBF24, #D97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .blinking-dot {
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        #api-key-modal {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+    <!-- Modal API Key FinancialModelingPrep -->
+    <div id="api-key-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card rounded-2xl p-8 shadow-2xl max-w-md w-full border border-yellow-500/30">
+            <h2 class="text-2xl font-bold text-white mb-2">Membutuhkan API Key</h2>
+            <p class="text-slate-400 mb-6">Untuk data live, masukkan API key gratis Anda dari <a href="https://site.financialmodelingprep.com/developer/docs" target="_blank" class="text-yellow-400 hover:underline">Financial Modeling Prep</a>.</p>
+            <div class="space-y-4">
+                <input id="fmp-api-key-input" type="text" placeholder="Masukkan API Key Anda" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                <button id="save-api-key-button" class="w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg shadow-yellow-500/20">
+                    Simpan dan Hubungkan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <!-- Header -->
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold gold-gradient-text">Dasbor Sinyal ICT XAUUSD</h1>
+            <p class="text-slate-400 mt-2">Sinyal presisi tinggi berdasarkan konsep ICT.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+
+            <!-- Kolom Sinyal Utama -->
+            <div class="lg:col-span-2 space-y-6 md:space-y-8">
+                
+                <!-- Kartu Sinyal Saat Ini -->
+                <section id="current-signal" class="glass-card rounded-2xl p-6 shadow-2xl min-h-[400px]">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-white">Sinyal Aktif</h2>
+                        <div id="signal-status-badge" class="flex items-center gap-2 text-sm font-semibold px-3 py-1 rounded-full">
+                            <span id="signal-status-dot" class="w-3 h-3 rounded-full blinking-dot"></span>
+                            <span id="signal-status-text"></span>
+                        </div>
+                    </div>
+
+                    <div id="signal-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <!-- Detail Sinyal -->
+                            <div class="space-y-4">
+                                <div class="flex items-center gap-3">
+                                    <div id="bias-icon" class="p-2 bg-slate-700 rounded-full"></div>
+                                    <span id="bias-text" class="text-xl font-bold"></span>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-400">Tipe Entri</p>
+                                    <p id="entry-type" class="text-lg font-semibold text-white"></p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-400">Rasional & Konfluensi ICT</p>
+                                    <p id="rationale" class="text-lg font-semibold text-yellow-300"></p>
+                                </div>
+                            </div>
+                            <!-- Parameter Harga -->
+                            <div class="space-y-4 p-4 bg-slate-800 rounded-lg">
+                                <div>
+                                    <p class="text-sm text-slate-400">Harga Entri</p>
+                                    <p id="entry-price" class="text-2xl font-bold text-white"></p>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="text-sm text-slate-400">Stop Loss</p>
+                                        <p id="stop-loss" class="text-xl font-bold text-red-400"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-slate-400">Take Profit</p>
+                                        <p id="take-profit" class="text-xl font-bold text-green-400"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Risk Reward -->
+                        <div class="bg-slate-800/50 rounded-lg p-4 flex items-center justify-between">
+                            <div class="font-semibold">
+                                <span class="text-slate-400">Risk/Reward Ratio:</span>
+                                <span id="rr-ratio" class="text-xl text-white ml-2"></span>
+                            </div>
+                            <div id="rr-visual" class="flex items-center space-x-1">
+                                <!-- Visual RR akan digenerate oleh JS -->
+                            </div>
+                        </div>
+                    </div>
+                    <div id="no-signal-message" class="hidden text-center py-12">
+                        <div id="no-signal-icon-container">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h3 id="no-signal-title" class="mt-2 text-xl font-medium text-slate-300">Menunggu Setup Sesuai Kriteria</h3>
+                        <p id="no-signal-subtitle" class="mt-1 text-sm text-slate-500">Pasar sedang tidak memberikan setup probabilitas tinggi. Sabar adalah kunci.</p>
+                    </div>
+                </section>
+                
+            </div>
+
+            <!-- Kolom Samping -->
+            <aside class="space-y-6 md:space-y-8">
+                <!-- Status Pasar -->
+                <section class="glass-card rounded-2xl p-6 shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-white">Status Pasar</h3>
+                        <button id="change-api-key-button" title="Ganti API Key" class="text-slate-400 hover:text-yellow-400 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400">Harga XAUUSD Saat Ini</span>
+                            <span id="current-price" class="text-lg font-semibold text-white">Memuat...</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400">Sesi Pasar</span>
+                            <span id="market-session" class="font-semibold">Memuat...</span>
+                        </div>
+                         <div class="flex justify-between items-center">
+                            <span class="text-slate-400">Bias HTF (H4)</span>
+                            <span id="daily-bias" class="font-semibold">Memuat...</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400">Narasi Hari Ini</span>
+                            <p id="intraday-bias" class="text-sm text-slate-300 mt-1 font-medium">Memuat...</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Edukasi ICT -->
+                <section class="glass-card rounded-2xl p-6 shadow-2xl">
+                     <h3 class="text-xl font-bold text-white mb-4">Glosarium ICT</h3>
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <h4 class="font-semibold text-yellow-200">Liquidity</h4>
+                            <p class="text-slate-400">Area di mana Stop Loss (buy/sell stops) terkumpul. Smart Money menargetkan area ini untuk mengisi posisi besar mereka.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-yellow-200">CHoCH</h4>
+                             <p class="text-slate-400">Change of Character. Indikasi awal pergeseran arah pasar di timeframe rendah, sering digunakan sebagai konfirmasi entri.</p>
+                        </div>
+                         <div>
+                            <h4 class="font-semibold text-yellow-200">Seek & Destroy</h4>
+                            <p class="text-slate-400">Kondisi pasar konsolidasi yang volatil, di mana harga menyapu likuiditas di kedua sisi tanpa arah yang jelas. Sangat berisiko untuk ditradingkan.</p>
+                        </div>
+                    </div>
+                </section>
+
+                 <div class="text-center">
+                    <button id="refresh-button" class="w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg shadow-yellow-500/20">
+                        Cari Sinyal Baru (Simulasi)
+                    </button>
+                 </div>
+            </aside>
+        </main>
+        
+        <footer class="text-center mt-12 text-slate-500 text-sm">
+            <p>&copy; 2025 ICT Signal System. Dibuat oleh trader, untuk trader.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // === DATA SIMULASI (Sebagai Fallback) ===
+            const signalDatabase = [
+                {
+                    status: 'ACTIVE',
+                    bias: 'BULLISH',
+                    entryType: 'Buy Limit',
+                    entry: 2345.50,
+                    sl: 2341.50,
+                    tp: 2357.50,
+                    rationale: 'Mitigasi FVG 15M + Reaksi di Order Block H1'
+                },
+                {
+                    status: 'ACTIVE',
+                    bias: 'BEARISH',
+                    entryType: 'Sell Limit',
+                    entry: 2362.80,
+                    sl: 2367.80,
+                    tp: 2350.80,
+                    rationale: 'Sweep Liquidity Asia High + CHoCH di 5M'
+                },
+                { status: 'WAITING', rationale: 'Tidak ada setup probabilitas tinggi.' }
+            ];
+            
+            // === STATE APLIKASI ===
+            let currentSignalIndex = 0;
+            let currentActiveSignal = null;
+            let htfBias = 'RANGING';
+
+            // === ELEMEN DOM ===
+            const apiKeyModal = document.getElementById('api-key-modal');
+            const apiKeyInput = document.getElementById('fmp-api-key-input');
+            const saveApiKeyButton = document.getElementById('save-api-key-button');
+            const signalStatusBadge = document.getElementById('signal-status-badge');
+            const signalStatusDot = document.getElementById('signal-status-dot');
+            const signalStatusText = document.getElementById('signal-status-text');
+            const signalContent = document.getElementById('signal-content');
+            const noSignalMessage = document.getElementById('no-signal-message');
+            const noSignalIconContainer = document.getElementById('no-signal-icon-container');
+            const noSignalTitle = document.getElementById('no-signal-title');
+            const noSignalSubtitle = document.getElementById('no-signal-subtitle');
+            const biasIcon = document.getElementById('bias-icon');
+            const biasText = document.getElementById('bias-text');
+            const entryType = document.getElementById('entry-type');
+            const rationale = document.getElementById('rationale');
+            const entryPrice = document.getElementById('entry-price');
+            const stopLoss = document.getElementById('stop-loss');
+            const takeProfit = document.getElementById('take-profit');
+            const rrRatio = document.getElementById('rr-ratio');
+            const rrVisual = document.getElementById('rr-visual');
+            const refreshButton = document.getElementById('refresh-button');
+            const currentPriceEl = document.getElementById('current-price');
+            const dailyBiasEl = document.getElementById('daily-bias');
+            const intradayBiasEl = document.getElementById('intraday-bias');
+            const changeApiKeyButton = document.getElementById('change-api-key-button');
+
+            const FMP_API_KEY_STORAGE_KEY = 'fmp_apiKey';
+            
+            // === FUNGSI-FUNGSI ===
+
+            function calculateRR(signal) {
+                if (!signal || typeof signal.entry === 'undefined' || typeof signal.sl === 'undefined' || typeof signal.tp === 'undefined') return 0;
+                const risk = Math.abs(signal.entry - signal.sl);
+                const reward = Math.abs(signal.tp - signal.entry);
+                if (risk === 0) return 0;
+                return reward / risk;
+            }
+            
+            function showNoSignalMessage(type = 'WAITING') {
+                signalContent.classList.add('hidden');
+                noSignalMessage.classList.remove('hidden');
+                
+                if (type === 'SEEK_AND_DESTROY') {
+                    noSignalIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`;
+                    noSignalTitle.textContent = 'Kondisi Seek & Destroy';
+                    noSignalSubtitle.textContent = 'Pasar sedang volatil tanpa arah jelas. Disarankan untuk tidak membuka posisi.';
+                    signalStatusBadge.className = 'flex items-center gap-2 text-sm font-semibold px-3 py-1 rounded-full bg-orange-500/20 text-orange-300';
+                    signalStatusDot.className = 'w-3 h-3 rounded-full bg-orange-400';
+                    signalStatusText.textContent = 'Berisiko';
+                } else { // WAITING
+                    noSignalIconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+                    noSignalTitle.textContent = 'Menunggu Setup Sesuai Kriteria';
+                    noSignalSubtitle.textContent = 'Tidak ada setup probabilitas tinggi yang selaras dengan bias HTF saat ini. Sabar adalah kunci.';
+                    signalStatusBadge.className = 'flex items-center gap-2 text-sm font-semibold px-3 py-1 rounded-full bg-slate-700 text-slate-300';
+                    signalStatusDot.className = 'w-3 h-3 rounded-full bg-slate-400';
+                    signalStatusText.textContent = 'Menunggu';
+                }
+            }
+
+            function updateSignalUI(signal) {
+                if (!signal || signal.status === 'WAITING') {
+                    showNoSignalMessage();
+                } else {
+                    signalContent.classList.remove('hidden');
+                    noSignalMessage.classList.add('hidden');
+
+                    signalStatusBadge.className = 'flex items-center gap-2 text-sm font-semibold px-3 py-1 rounded-full bg-green-500/20 text-green-300';
+                    signalStatusDot.className = 'w-3 h-3 rounded-full bg-green-400 blinking-dot';
+                    signalStatusText.textContent = 'Aktif';
+
+                    if (signal.bias === 'BULLISH') {
+                        biasIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>`;
+                        biasText.textContent = 'Bias Bullish';
+                        biasText.className = "text-xl font-bold text-green-400";
+                    } else {
+                        biasIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>`;
+                        biasText.textContent = 'Bias Bearish';
+                        biasText.className = "text-xl font-bold text-red-400";
+                    }
+
+                    entryType.textContent = signal.entryType;
+                    rationale.textContent = signal.rationale;
+                    entryPrice.textContent = signal.entry.toFixed(2);
+                    stopLoss.textContent = signal.sl.toFixed(2);
+                    takeProfit.textContent = signal.tp.toFixed(2);
+
+                    const rr = calculateRR(signal);
+                    rrRatio.textContent = `1 : ${rr.toFixed(1)}`;
+                    rrRatio.classList.toggle('text-red-400', rr < 2);
+
+                    rrVisual.innerHTML = '';
+                    const rewardBlocks = Math.round(rr);
+                    rrVisual.appendChild(Object.assign(document.createElement('div'), { className: 'w-4 h-6 bg-red-500 rounded-sm', title: '1 Risk' }));
+                    for (let i = 0; i < rewardBlocks; i++) {
+                        rrVisual.appendChild(Object.assign(document.createElement('div'), { className: 'w-4 h-6 bg-green-500 rounded-sm', title: `${i+1} Reward` }));
+                    }
+                }
+            }
+            
+            function generateLiveSignal(currentPrice, bias) {
+                if (bias === 'RANGING') {
+                    return { status: 'WAITING' };
+                }
+
+                const isBullish = bias === 'BULLISH';
+                const entryOffset = (Math.random() * 3) + 1.5;
+                const riskPoints = (Math.random() * 2) + 3.0;
+                const rr = (Math.random() * 2) + 2.0;
+                const rewardPoints = riskPoints * rr;
+                
+                const bullishRationales = [ 'Menunggu konfirmasi M5 di area FVG Daily, searah bias H4', 'Potensi reaksi dari Order Block Daily, searah bias H4', 'Entry setelah sweep liquidity sell-side di level Daily' ];
+                const bearishRationales = [ 'Menunggu konfirmasi M5 di area FVG Daily, searah bias H4', 'Potensi reaksi dari Order Block Daily, searah bias H4', 'Entry setelah sweep liquidity buy-side di level Daily' ];
+
+                const randomRationale = isBullish ? bullishRationales[Math.floor(Math.random() * bullishRationales.length)] : bearishRationales[Math.floor(Math.random() * bearishRationales.length)];
+                
+                let entry, sl, tp;
+                if (isBullish) {
+                    entry = currentPrice - entryOffset;
+                    sl = entry - riskPoints;
+                    tp = entry + rewardPoints;
+                } else { // BEARISH
+                    entry = currentPrice + entryOffset;
+                    sl = entry + riskPoints;
+                    tp = entry - rewardPoints;
+                }
+                return { status: 'ACTIVE', bias, entryType: isBullish ? 'Buy Limit' : 'Sell Limit', entry, sl, tp, rationale: randomRationale };
+            }
+
+            async function updateDashboardStatus() {
+                const apiKey = localStorage.getItem(FMP_API_KEY_STORAGE_KEY);
+                const url = `https://financialmodelingprep.com/api/v3/quote/XAUUSD?apikey=${apiKey}`;
+
+                try {
+                    if (!apiKey) throw new Error('API Key FinancialModelingPrep belum diatur.');
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Gagal mengambil data. Status: ${response.status}`);
+                    const data = await response.json();
+                    if (data && data.length > 0 && data[0].price) {
+                        currentPriceEl.textContent = data[0].price.toFixed(3);
+                        currentPriceEl.classList.remove('text-red-400', 'animate-pulse');
+                        currentPriceEl.title = 'Harga Live dari FinancialModelingPrep';
+                    } else if (data['Error Message']) {
+                        throw new Error(data['Error Message']);
+                    } else {
+                        throw new Error('Format data API FMP tidak valid.');
+                    }
+                } catch (error) {
+                    console.error('Gagal mengambil harga live FMP:', error.message);
+                    currentPriceEl.textContent = 'Error';
+                    currentPriceEl.classList.add('text-red-400', 'animate-pulse');
+                    if (error.message.includes('API Key') || error.message.includes('Invalid API KEY')) {
+                        apiKeyModal.classList.remove('hidden');
+                        apiKeyModal.classList.add('flex');
+                        currentPriceEl.title = 'API Key dibutuhkan. Silakan masukkan di pop-up.';
+                    } else {
+                        currentPriceEl.title = `Gagal terhubung ke server FMP: ${error.message}`;
+                    }
+                }
+
+                // Sesi Pasar
+                const utcHour = new Date().getUTCHours();
+                let session = 'Tutup', sessionColor = 'text-slate-400';
+                if (utcHour >= 7 && utcHour < 16 && utcHour >= 12 && utcHour < 21) { session = 'London/NY'; sessionColor = 'text-blue-400'; }
+                else if ((utcHour >= 22 || utcHour < 7) && (utcHour >= 0 && utcHour < 9)) { session = 'Sydney/Tokyo'; sessionColor = 'text-pink-400'; }
+                else if (utcHour >= 7 && utcHour < 16 && utcHour >= 0 && utcHour < 9) { session = 'Tokyo/London'; sessionColor = 'text-cyan-400';}
+                else if (utcHour >= 12 && utcHour < 21) { session = 'New York'; sessionColor = 'text-blue-400'; }
+                else if (utcHour >= 7 && utcHour < 16) { session = 'London'; sessionColor = 'text-cyan-400'; }
+                else if (utcHour >= 0 && utcHour < 9) { session = 'Tokyo'; sessionColor = 'text-pink-400'; }
+                else if (utcHour >= 22 || utcHour < 7) { session = 'Sydney'; sessionColor = 'text-purple-400'; }
+                document.getElementById('market-session').textContent = session;
+                document.getElementById('market-session').className = `font-semibold ${sessionColor}`;
+                
+                // Simulasi Bias HTF (H4) berdasarkan Sesi Pasar (UTC)
+                let biasObj = {text: 'Ranging', color: 'text-slate-400'};
+                htfBias = 'RANGING'; // Default untuk sesi Asia dan penutupan NY
+
+                if (utcHour >= 7 && utcHour < 12) { // London Open - Seringkali menentukan arah
+                    biasObj = { text: 'Bullish', color: 'text-green-400' };
+                    htfBias = 'BULLISH';
+                } else if (utcHour >= 12 && utcHour < 17) { // NY Session - Melanjutkan atau membalikkan arah London
+                    biasObj = { text: 'Bullish', color: 'text-green-400' }; // Simulasi kelanjutan
+                    htfBias = 'BULLISH';
+                } else if (utcHour >= 17 && utcHour < 21) { // Penutupan London - Potensi profit taking/reversal
+                    biasObj = { text: 'Bearish', color: 'text-red-400' };
+                    htfBias = 'BEARISH';
+                }
+
+                dailyBiasEl.textContent = biasObj.text;
+                dailyBiasEl.className = `font-semibold ${biasObj.color}`;
+
+                // Narasi Hari Ini
+                let narrativeText = '';
+                switch (htfBias) {
+                    case 'BULLISH':
+                        narrativeText = "Sesi London/NY aktif, mendorong harga ke atas. Cari konfirmasi beli di level kunci Daily.";
+                        break;
+                    case 'BEARISH':
+                        narrativeText = "Potensi profit taking/reversal di akhir sesi. Cari konfirmasi jual di level kunci Daily.";
+                        break;
+                    case 'RANGING':
+                    default:
+                        narrativeText = "Sesi Asia/penutupan, pasar cenderung konsolidasi. Waspada kondisi seek and destroy.";
+                        break;
+                }
+                intradayBiasEl.textContent = narrativeText;
+
+                refreshButton.textContent = apiKey ? 'Cari Sinyal Live' : 'Cari Sinyal Baru (Simulasi)';
+            }
+            
+            // === EVENT LISTENERS ===
+
+            async function generateNewSignal() {
+                const apiKey = localStorage.getItem(FMP_API_KEY_STORAGE_KEY);
+                refreshButton.disabled = true;
+                refreshButton.textContent = 'Mencari...';
+                refreshButton.classList.add('animate-pulse');
+
+                // Langkah 1: Deteksi kondisi pasar (Seek & Destroy)
+                const isSeekAndDestroy = Math.random() < 0.2; // 20% kemungkinan S&D
+                if (isSeekAndDestroy && apiKey) {
+                    showNoSignalMessage('SEEK_AND_DESTROY');
+                    currentActiveSignal = { status: 'WAITING' };
+                    setTimeout(() => {
+                        refreshButton.disabled = false;
+                        refreshButton.textContent = 'Cari Sinyal Live';
+                        refreshButton.classList.remove('animate-pulse');
+                    }, 1000);
+                    return; // Hentikan proses
+                }
+
+                if (apiKey) {
+                    try {
+                        const response = await fetch(`https://financialmodelingprep.com/api/v3/quote/XAUUSD?apikey=${apiKey}`);
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}));
+                            throw new Error(errorData['Error Message'] || `Gagal mengambil harga. Status: ${response.status}`);
+                        }
+                        const data = await response.json();
+                        if (data && data.length > 0 && data[0].price) {
+                            // Langkah 2: Generate sinyal sesuai bias HTF
+                            const newSignal = generateLiveSignal(data[0].price, htfBias);
+                            updateSignalUI(newSignal);
+                            currentActiveSignal = newSignal;
+                        } else {
+                            throw new Error('Format data harga tidak valid.');
+                        }
+                    } catch (error) {
+                        console.error("Gagal generate sinyal live:", error);
+                        const waitingSignal = { status: 'WAITING' };
+                        updateSignalUI(waitingSignal);
+                        currentActiveSignal = waitingSignal;
+                        noSignalTitle.textContent = 'Gagal Membuat Sinyal Live';
+                        noSignalSubtitle.textContent = `Error: ${error.message}. Coba lagi nanti.`;
+                    }
+                } else {
+                    // Mode Simulasi (tanpa logika HTF/S&D yang kompleks)
+                    currentSignalIndex = (currentSignalIndex + 1) % signalDatabase.length;
+                    const newSignal = signalDatabase[currentSignalIndex];
+                    updateSignalUI(newSignal);
+                    currentActiveSignal = newSignal;
+                }
+
+                setTimeout(() => {
+                    refreshButton.disabled = false;
+                    refreshButton.textContent = apiKey ? 'Cari Sinyal Live' : 'Cari Sinyal Baru (Simulasi)';
+                    refreshButton.classList.remove('animate-pulse');
+                }, 500);
+            }
+
+            saveApiKeyButton.addEventListener('click', async () => {
+                const key = apiKeyInput.value.trim();
+                if (key) {
+                    localStorage.setItem(FMP_API_KEY_STORAGE_KEY, key);
+                    apiKeyModal.classList.add('hidden');
+                    apiKeyModal.classList.remove('flex');
+                    currentPriceEl.textContent = 'Menghubungkan...';
+                    currentPriceEl.title = '';
+                    
+                    await updateDashboardStatus();
+
+                    // Jika update status berhasil (modal tidak muncul lagi), langsung generate sinyal live
+                    if (apiKeyModal.classList.contains('hidden')) {
+                        await generateNewSignal();
+                    }
+                } else {
+                    apiKeyInput.classList.add('border-red-500', 'animate-pulse');
+                    setTimeout(() => apiKeyInput.classList.remove('border-red-500', 'animate-pulse'), 2000);
+                }
+            });
+
+            refreshButton.addEventListener('click', generateNewSignal);
+
+            changeApiKeyButton.addEventListener('click', () => {
+                const currentKey = localStorage.getItem(FMP_API_KEY_STORAGE_KEY) || '';
+                apiKeyInput.value = currentKey;
+                apiKeyModal.classList.remove('hidden');
+                apiKeyModal.classList.add('flex');
+            });
+
+            // === INITIALIZE APP ===
+            async function initializeApp() {
+                // Tampilkan pesan loading awal yang netral
+                showNoSignalMessage();
+                noSignalTitle.textContent = 'Menginisialisasi Dasbor...';
+                noSignalSubtitle.textContent = 'Menghubungkan ke penyedia data...';
+
+                // Jalankan update status pertama kali. Fungsi ini akan menangani validasi API key
+                // dan akan menampilkan modal jika diperlukan.
+                await updateDashboardStatus();
+
+                const apiKey = localStorage.getItem(FMP_API_KEY_STORAGE_KEY);
+                
+                // Jika API Key ada dan valid (modal tidak muncul), langsung generate sinyal live.
+                if (apiKey && apiKeyModal.classList.contains('hidden')) {
+                    await generateNewSignal();
+                } else {
+                    // Jika tidak, tampilkan sinyal simulasi fallback (modal mungkin sudah ditampilkan).
+                    updateSignalUI(signalDatabase[0]);
+                }
+
+                // Mulai interval pembaruan status rutin.
+                setInterval(updateDashboardStatus, 60000);
+            }
+            
+            initializeApp(); // Jalankan aplikasi!
+        });
+    </script>
+</body>
+</html>
+
