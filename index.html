@@ -1840,8 +1840,8 @@
 
             // Assembly prompt context structures
             const finalPrompt = `
-                Kamu adalah seorang "Senior Trading Analyst & Senior Risk Manager" di dana lindung (hedge fund) institusional papan atas global. 
-                Tugas utama kamu adalah melakukan analisis teknikal komprehensif, multi-timeframe (Multi-TF Alignment), serta mencocokkan kondisi pasar live saat ini secara mutlak dengan aturan-aturan trading terlampir.
+                Kamu adalah seorang "Senior Trading Analyst & Senior Risk Manager" di dana lindung (hedge fund) institusional papan atas global.                 
+                Tugas utama kamu adalah mengekstrak strategi dari dokumen, menyimpulkannya menjadi 1 SOP Setup yang baku, lalu melakukan analisis multi-timeframe (Multi-TF Alignment) untuk mencari pemicu entri yang valid berdasarkan SOP tersebut.
                 
                 [PARAMETRE PASAR LIVE]
                 Simbol: ${selectedMarket}
@@ -1850,23 +1850,21 @@
                 
                 PENTING UNTUK ANALISIS SESI & SYNC WAKTU: 
                 - Tanggal & Waktu Live New York di atas dan seluruh data timestamp historis lilin (OHLC) di bawah ini dijamin menggunakan ZONA WAKTU YANG SAMA, yaitu America/New_York (EST/EDT).
-                - TIDAK ADA SELISIH ATAU GAP WAKTU. Jika lilin terbaru menunjukkan waktu yang sangat dekat dengan waktu live di atas, itu adalah lilin yang sedang berjalan (real-time). Jangan berasumsi ada timezone mismatch!
-                - Gunakan "Tanggal & Waktu Live NY" untuk menilai sesi pasar yang sedang berjalan (New York, London, atau Asia). Analisis bagaimana jam perdagangan aktif saat ini memengaruhi likuiditas, volatilitas, dan potensi manipulasi harga (pembukaan sesi, judas swing, pemburu likuiditas) sesuai dengan aturan strategi Anda.
+                - TIDAK ADA SELISIH ATAU GAP WAKTU. Jika lilin terbaru menunjukkan waktu yang sangat dekat dengan waktu live di atas, itu adalah lilin yang sedang berjalan (real-time).
                 
                 [TIMEFRAME UTAMA YANG HARUS DIANALISIS]
                 Timeframe Terpilih: ${selectedTfs.join(", ").toUpperCase()}
                 
                 [DATA HISTORIS LILIN REAL-TIME / HISTORICAL CANDLES]
-                Berikut adalah data OHLC aktual dari server. Lakukan pembacaan Price Action secara presisi. JANGAN BERHALUSINASI atau menebak angka di luar data ini:
+                Berikut adalah data OHLC aktual dari server. Lakukan pembacaan Price Action secara presisi berdasarkan angka ini:
                 ${ohlcPromptContext}
                 
-                Instruksi Evaluasi Candlestick (WAJIB DIPATUHI):
-                - Periksa hubungan nilai Open vs Close: Jika Close > Open = 100% BULLISH. Jika Close < Open = 100% BEARISH. Evaluasi ini harus konsisten di seluruh laporan.
-                - Hitung sumbu atas (High - Max(Open, Close)) dan sumbu bawah (Min(Open, Close) - Low) untuk menilai penolakan harga (Rejection / Pinbar / Squeeze).
-                - Lakukan Analisis Top-Down: Ambil timeframe terbesar yang dipilih sebagai jangkar tren utama (Major Trend Bias). Gunakan timeframe menengah untuk konfirmasi perpindahan struktur pasar (BOS/MSS/CHoCH). Gunakan timeframe terkecil sebagai penentu koordinat pemicu entri yang tajam (Entry Trigger Execution).
+                Instruksi Evaluasi Candlestick:
+                - Periksa hubungan nilai Open vs Close: Jika Close > Open = 100% BULLISH. Jika Close < Open = 100% BEARISH.
+                - Lakukan Analisis Top-Down secara sekuensial: Gunakan timeframe terbesar sebagai jangkar tren utama (Major Trend Bias), timeframe menengah untuk melihat perubahan struktur pasar (BOS/CHoCH/MSS), dan timeframe terkecil sebagai eksekutor entri (Entry Trigger).
                 
                 [STRATEGI YANG DIEKSTRAK DARI DOKUMEN TEXT PENGGUNA]
-                ${strategyTextContext.length > 0 ? strategyTextContext : "Tidak ada berkas teks langsung. Andalkan price action murni dan manajemen risiko institusional."}
+                ${strategyTextContext.length > 0 ? strategyTextContext : "Tidak ada berkas teks langsung. Gunakan price action murni."}
                 
                 [DOKUMEN STRATEGI BERBASIS GAMBAR / WATERMARK]
                 ${strategyVisionInfo.length > 0 ? strategyVisionInfo + "\n\nINSTRUKSI KHUSUS VISION: Bacalah lembar lampiran gambar dokumen PDF dengan seksama. Abaikan segala bentuk watermark teks pengganggu. Fokuslah mengekstrak tabel, diagram, alur panah, dan teks petunjuk perdagangan murni di dalamnya." : "Tidak ada berkas PDF visual."}
@@ -1879,29 +1877,29 @@
                 Susun laporan taktis yang sangat terperinci dalam format Markdown dengan pembagian bab berikut:
                 
                 1. RINGKASAN EKSEKUTIF & SENTIMEN PASAR
-                - Berikan bias arah mata uang/aset secara tegas (Bullish/Bearish/Neutral) berdasarkan korelasi timeframe ${selectedTfs.join(" & ").toUpperCase()}.
+                - Berikan bias arah secara tegas (Bullish/Bearish/Neutral) berdasarkan kondisi live pasar saat ini.
                 
                 2. ANALISIS ALIGNMENT MULTI-TIMEFRAME
-                - Bahas mendalam pergerakan tren secara sekuensial dari TF terbesar hingga TF terkecil. 
-                - Tunjukkan apakah ada divergensi arah atau keselarasan tren murni. Rujuk nilai angka OHLC lilin di atas untuk membuktikan bias Anda.
+                - Bahas mendalam pergerakan tren dari TF terbesar hingga TF terkecil secara berurutan. Rujuk nilai angka OHLC lilin di atas untuk membuktikan bias Anda.
                 
-                3. KESELARASAN STRATEGIS (CONFORMANCE CHECK)
-                - Apakah struktur harga live saat ini memenuhi syarat (valid) atau melanggar aturan-aturan dalam dokumen strategi/materi terlampir? Sebutkan aturan mana yang dipenuhi atau dilanggar.
+                3. FORMULASI SOP SETUP & KONDISI CHECKLIST (DARI MATERI)
+                - Berdasarkan dokumen strategi & instruksi yang kamu baca di atas, **simpulkan dan formulasikan menjadi 1 SOP Setup Utama** yang berisi kriteria konfirmasi entri yang padat (misal: Sesi Waktu, Ambil Likuiditas, Market Structure Shift, FVG/Order Block).
+                - Buat dalam bentuk **CHECKLIST STATUS** [Sudah Terpenuhi / Belum Terpenuhi] untuk mencocokkan apakah kondisi pasar live saat ini sudah memenuhi SOP tersebut.
                 
                 4. ANALISIS LEVEL KUNCI TEKNIKAL & STRUKTUR PASAR
-                - Buat dalam bentuk TABEL MARKDOWN untuk menentukan level kunci: Support/Resistance, Order Blocks (OB), Fair Value Gaps (FVG), atau area Likuiditas penting berdasarkan data real-time saat ini.
+                - Buat dalam bentuk TABEL MARKDOWN untuk menentukan level kunci: Support/Resistance, Order Blocks (OB), Fair Value Gaps (FVG), atau area Likuiditas penting yang menjadi target harga.
                 
-                5. REKOMENDASI TRADING EKSEKUTIF (RULE-BASED OVERLAY)
-                - Jika valid: Tentukan titik Entry, Stop Loss defensif yang logis, level Take Profit bertahap (TP1, TP2), dan Rasio Risk-to-Reward (minimal 1:2).
-                - Jika TIDAK valid menurut strategi: Nyatakan secara tegas "NO TRADE / WAIT" dengan alasan logis demi pelestarian modal.
+                5. REKOMENDASI TRADING EKSEKUTIF (RULE-BASED ENTRY)
+                - **Jika semua checklist di Bab 3 bernilai [Sudah Terpenuhi]:** Tentukan titik koordinat Entry, Stop Loss defensif, level Take Profit bertahap (TP1, TP2), dan Rasio Risk-to-Reward (minimal 1:2).
+                - **Jika ada 1 saja checklist di Bab 3 yang [Belum Terpenuhi]:** Nyatakan secara tegas "NO TRADE / WAIT" karena setup belum matang secara mekanis demi pelestarian modal.
                 
                 6. EVALUASI RISIKO & ENJIN KATALIS
                 - Sebutkan risiko makro sesi, parameter emosi, dan peringatan mitigasi modal (Capital Preservation).
                 
                 ---
                 RULES TAMBAHAN:
-                - Berikan respons langsung dimulai dari "1. RINGKASAN EKSEKUTIF...". JANGAN memberikan kalimat basa-basi di awal seperti "Baik, berikut adalah laporan..." atau kalimat penutup ramah tamah di akhir. 
-                - Gunakan bahasa Indonesia dengan nada profesional, dingin, tajam, objektif, dan tanpa bahasa marketing. Fokus utama adalah pengelolaan risiko!
+                - Berikan respons langsung dimulai dari "1. RINGKASAN EKSEKUTIF...". JANGAN memberikan kalimat basa-basi di awal atau penutup ramah tamah di akhir. 
+                - Gunakan bahasa Indonesia dengan nada profesional, dingin, tajam, objektif, dan fokus utama pada pengelolaan risiko!
             `;
 
             // Prepare Gemini Multimodal Payload
