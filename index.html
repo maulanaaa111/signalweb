@@ -3,747 +3,2012 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Trading Analyst Dashboard - Pro Edition</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>AI Trading Analyst Dashboard</title>
+    
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandDark: '#0b0e14',
+                        brandCard: '#131722',
+                        brandBorder: '#2a2e39',
+                        brandInput: '#1c2030',
+                        brandAccent: '#2962ff',
+                        brandAccentHover: '#1e4bd6',
+                        brandSuccess: '#089981',
+                        brandDanger: '#f23645'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- PDF.js library for direct client-side PDF text extraction & image rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Marked.js library for parsing AI Markdown response into beautiful HTML output -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- TradingView Widget Library CDN -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0b0f19;
-            color: #f3f4f6;
+            background-color: #0b0e14;
+            color: #d1d4dc;
+            font-family: 'Inter', sans-serif;
         }
-        .terminal-text {
-            font-family: 'JetBrains Mono', monospace;
-        }
-        /* Custom Scrollbar */
+        /* Custom styled scrollbar for dark modern terminal theme */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: #111827;
+            background: #0b0e14;
         }
         ::-webkit-scrollbar-thumb {
-            background: #374151;
-            border-radius: 3px;
+            background: #2a2e39;
+            border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #4b5563;
+            background: #363c4e;
         }
+        /* Markdown style content bindings inside terminal */
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            color: #ffffff;
+            font-weight: 700;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid #2a2e39;
+            padding-bottom: 0.25rem;
+        }
+        .markdown-body h1 { font-size: 1.35rem; }
+        .markdown-body h2 { font-size: 1.15rem; }
+        .markdown-body h3 { font-size: 1rem; }
+        .markdown-body p { margin-bottom: 0.75rem; font-size: 0.85rem; line-height: 1.6; }
+        .markdown-body ul, .markdown-body ol { margin-left: 1.25rem; margin-bottom: 0.75rem; list-style-type: decimal; }
+        .markdown-body ul { list-style-type: disc; }
+        .markdown-body li { font-size: 0.85rem; margin-bottom: 0.25rem; }
+        .markdown-body strong { color: #ffffff; font-weight: 600; }
+        .markdown-body code { font-family: 'Fira Code', monospace; background-color: #1c2030; padding: 0.15rem 0.3rem; border-radius: 4px; font-size: 0.8rem; color: #ff79c6; }
+        .markdown-body table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.8rem; text-align: left; }
+        .markdown-body th, .markdown-body td { border: 1px solid #2a2e39; padding: 0.5rem 0.75rem; }
+        .markdown-body th { background-color: #1c2030; color: #ffffff; font-weight: 600; }
+        .markdown-body tr:nth-child(even) { background-color: #131722/50; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between">
+<body class="min-h-screen flex flex-col antialiased">
 
-    <header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md px-6 py-4 flex flex-wrap justify-between items-center gap-4 sticky top-0 z-40">
-        <div class="flex items-center gap-3">
-            <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
-                <i class="fa-solid fa-chart-line text-xl text-white"></i>
+    <!-- AUTH SCREEN GATEWAY OVERLAY -->
+    <div id="authScreen" class="fixed inset-0 bg-brandDark/98 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-brandCard border border-brandBorder w-full max-w-md rounded-2xl shadow-2xl p-6 sm:p-8 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-40 h-40 bg-brandAccent/10 rounded-full blur-3xl"></div>
+            
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 bg-gradient-to-tr from-brandAccent to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brandAccent/25">
+                    <i class="fa-solid fa-brain text-white text-2xl animate-pulse"></i>
+                </div>
+                <h2 id="authTitle" class="text-xl font-extrabold text-white tracking-tight">Sign In Trader</h2>
+                <p id="authSubtitle" class="text-xs text-zinc-400 mt-1.5 leading-relaxed">Akses repositori strategi & analisis multi-dokumen terproteksi</p>
+            </div>
+
+            <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Alamat Email</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-500"><i class="fa-regular fa-envelope text-xs"></i></span>
+                        <input id="authEmail" type="email" required class="w-full bg-brandInput border border-brandBorder rounded-xl pl-9 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-brandAccent transition-all placeholder:text-zinc-600" placeholder="nama@trader.com">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Kata Sandi (Min 6 Karakter)</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-500"><i class="fa-solid fa-lock text-xs"></i></span>
+                        <input id="authPassword" type="password" required class="w-full bg-brandInput border border-brandBorder rounded-xl pl-9 pr-10 py-2.5 text-xs text-white focus:outline-none focus:border-brandAccent transition-all placeholder:text-zinc-600" placeholder="••••••••">
+                        <button type="button" onclick="toggleVisibility('authPassword')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-500 hover:text-zinc-300"><i class="fa-regular fa-eye text-xs"></i></button>
+                    </div>
+                </div>
+
+                <button id="authSubmitBtn" type="submit" class="w-full bg-brandAccent hover:bg-brandAccentHover text-white py-3 rounded-xl text-xs font-bold transition-all shadow-md shadow-brandAccent/20 flex items-center justify-center gap-2 mt-2">
+                    <span id="authSubmitText">Masuk Sekarang</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                </button>
+            </form>
+
+            <div class="relative flex py-4 items-center">
+                <div class="flex-grow border-t border-brandBorder"></div>
+                <span class="flex-shrink mx-3 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Atau</span>
+                <div class="flex-grow border-t border-brandBorder"></div>
+            </div>
+
+            <!-- Guest entry button if Firebase connections are blocked or unauthenticated -->
+            <button onclick="handleGuestEntry()" type="button" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border border-brandBorder/80">
+                <span>Masuk Tanpa Login (Mode Tamu)</span> <i class="fa-solid fa-user-secret"></i>
+            </button>
+
+            <div class="text-center mt-6">
+                <p class="text-xs text-zinc-500">
+                    <span id="authSwitchText">Belum memiliki akun?</span> 
+                    <button type="button" onclick="toggleAuthMode()" id="authSwitchBtn" class="text-brandAccent font-bold hover:underline ml-1">Daftar Baru</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN INTERACTIVE APP CONTAINER -->
+    <header class="bg-brandCard border-b border-brandBorder px-4 sm:px-6 py-3.5 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 bg-brandAccent rounded-xl flex items-center justify-center shadow-lg shadow-brandAccent/20">
+                <i class="fa-solid fa-chart-line text-white text-sm"></i>
             </div>
             <div>
-                <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                    AI Trading Analyst <span class="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-medium">v3.0 Pro</span>
+                <h1 class="text-sm font-extrabold text-white tracking-tight flex items-center gap-1.5">
+                    AI TRADING ANALYST <span class="bg-emerald-500/10 text-emerald-400 text-[9px] px-1.5 py-0.5 rounded font-mono font-bold tracking-widest uppercase border border-emerald-500/20">v2.5</span>
                 </h1>
-                <p class="text-xs text-gray-400">ICT Strategy Automation Dashboard</p>
+                <p class="text-[10px] text-zinc-400 tracking-wide">Multi-Timeframe Decision Core</p>
             </div>
         </div>
 
-        <div class="flex items-center gap-6 bg-gray-950/60 border border-gray-800 px-4 py-2 rounded-xl">
-            <div class="text-right">
-                <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Waktu New York (EST/EDT)</div>
-                <div id="ny-clock" class="terminal-text text-sm font-bold text-emerald-400">Loading...</div>
+        <div class="flex flex-wrap items-center gap-2 sm:gap-4 ml-auto">
+            <!-- Active Time Display (Dynamically Synced with New York America/New_York Timezone) -->
+            <div class="bg-brandDark/80 border border-brandBorder px-3 py-1.5 rounded-lg flex items-center gap-2">
+                <span class="w-1.5 h-1.5 bg-brandSuccess rounded-full animate-ping"></span>
+                <span class="text-[10px] font-mono font-bold text-zinc-300 tracking-wider flex items-center gap-1">
+                    <i class="fa-regular fa-clock text-zinc-500"></i> NY TIME: <span id="system-time">0000-00-00 00:00:00</span>
+                </span>
             </div>
-            <div class="h-8 w-px bg-gray-800"></div>
-            <div id="auth-status-container" class="flex items-center gap-2">
-                <button onclick="toggleAuthModal()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-lg border border-gray-700 transition">
-                    <i class="fa-solid fa-user-lock mr-1"></i> Login / Register
+
+            <!-- Active User Authentication Badges and Actions -->
+            <div class="flex items-center gap-2">
+                <div class="bg-brandDark/80 border border-brandBorder px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <i class="fa-regular fa-circle-user text-zinc-500 text-xs"></i>
+                    <span id="userEmailBadge" class="text-[10px] font-bold text-zinc-300 truncate max-w-[150px]">Memuat Sesi...</span>
+                </div>
+                <button id="logoutBtn" onclick="handleLogout()" class="bg-zinc-800 hover:bg-brandDanger hover:text-white text-zinc-400 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5" title="Logout Sesi">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="hidden md:inline">Logout</span>
+                </button>
+                <button id="backToLoginBtn" onclick="forceShowLogin()" class="hidden bg-brandAccent hover:bg-brandAccentHover text-white px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5" title="Masuk Akun">
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i> <span class="hidden md:inline">Sign In</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 lg:p-6 grid grid-cols-1 xl:grid-cols-12 gap-6">
+    <!-- WORKSPACE PANEL GRID LAYOUT -->
+    <main class="flex-1 p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start overflow-y-auto max-w-full">
         
-        <section class="xl:col-span-4 flex flex-col gap-6">
+        <!-- SIDE CONTROL AND STRATEGY CONFIGURATION (LEFT COLUMN - 4 SPAN) -->
+        <aside class="lg:col-span-4 space-y-6 flex flex-col">
             
-            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 backdrop-blur-sm">
-                <h2 class="text-sm font-bold uppercase tracking-wider text-gray-300 mb-4 flex items-center justify-between">
-                    <span><i class="fa-solid fa-key text-blue-400 mr-2"></i> Pengaturan API Key</span>
-                    <span id="storage-badge" class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-md">Mode Tamu (Lokal)</span>
-                </h2>
+            <!-- BLOCK 1: API KEYS CREDENTIAL BOARD -->
+            <section class="bg-brandCard border border-brandBorder rounded-xl p-5 relative overflow-hidden transition-all hover:border-zinc-700">
+                <div class="absolute top-0 left-0 w-1 h-full bg-brandAccent"></div>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-brandAccent"></i> Kredensial Akses API
+                </h3>
                 
-                <div class="space-y-4">
+                <div class="space-y-3.5">
+                    <!-- Gemini AI Key Configuration -->
                     <div>
-                        <label class="block text-xs text-gray-400 font-medium mb-1.5">Gemini API Key</label>
+                        <label class="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 mb-1 flex justify-between items-center">
+                            Gemini API Key
+                            <a href="https://aistudio.google.com/" target="_blank" class="text-[9px] text-brandAccent hover:underline lowercase font-medium">Buat Kunci <i class="fa-solid fa-up-right-from-square text-[7px]"></i></a>
+                        </label>
                         <div class="relative">
-                            <input type="password" id="gemini-key-input" placeholder="AIzaSy..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-sm terminal-text text-gray-200 focus:outline-none focus:border-blue-500 transition">
-                            <button onclick="togglePasswordVisibility('gemini-key-input', this)" class="absolute right-3 top-2.5 text-gray-500 hover:text-gray-300">
-                                <i class="fa-solid fa-eye text-xs"></i>
-                            </button>
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-zinc-500"><i class="fa-solid fa-microchip text-[10px]"></i></span>
+                            <input id="geminiApiKey" type="password" class="w-full bg-brandInput border border-brandBorder rounded-lg pl-8 pr-10 py-1.5 text-xs text-white focus:outline-none focus:border-brandAccent transition-all placeholder:text-zinc-600" placeholder="AIzaSy...">
+                            <button type="button" onclick="toggleVisibility('geminiApiKey')" class="absolute inset-y-0 right-0 flex items-center pr-2.5 text-zinc-500 hover:text-zinc-300"><i class="fa-regular fa-eye text-[11px]"></i></button>
                         </div>
                     </div>
 
+                    <!-- TwelveData Market Key Configuration -->
                     <div>
-                        <label class="block text-xs text-gray-400 font-medium mb-1.5">TwelveData API Key</label>
+                        <label class="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 mb-1 flex justify-between items-center">
+                            TwelveData API Key
+                            <a href="https://twelvedata.com/" target="_blank" class="text-[9px] text-brandAccent hover:underline lowercase font-medium">Buat Kunci <i class="fa-solid fa-up-right-from-square text-[7px]"></i></a>
+                        </label>
                         <div class="relative">
-                            <input type="password" id="twervedata-key-input" placeholder="Masukkan API Key TwelveData..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-sm terminal-text text-gray-200 focus:outline-none focus:border-blue-500 transition">
-                            <button onclick="togglePasswordVisibility('twervedata-key-input', this)" class="absolute right-3 top-2.5 text-gray-500 hover:text-gray-300">
-                                <i class="fa-solid fa-eye text-xs"></i>
-                            </button>
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-zinc-500"><i class="fa-solid fa-chart-line text-[10px]"></i></span>
+                            <input id="marketApiKey" type="password" class="w-full bg-brandInput border border-brandBorder rounded-lg pl-8 pr-10 py-1.5 text-xs text-white focus:outline-none focus:border-brandAccent transition-all placeholder:text-zinc-600" placeholder="e8361b...">
+                            <button type="button" onclick="toggleVisibility('marketApiKey')" class="absolute inset-y-0 right-0 flex items-center pr-2.5 text-zinc-500 hover:text-zinc-300"><i class="fa-regular fa-eye text-[11px]"></i></button>
                         </div>
                     </div>
-                    
-                    <button onclick="saveApiKeys()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 rounded-xl shadow-lg shadow-blue-600/10 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-floppy-disk"></i> Simpan Kredensial API
-                    </button>
-                </div>
-            </div>
 
-            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 backdrop-blur-sm">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-gray-300 flex items-center gap-2">
-                        <i class="fa-solid fa-sliders text-emerald-400"></i> Parameter Pasar
-                    </h2>
-                    
-                    <label class="relative inline-flex items-center cursor-pointer select-none">
-                        <input type="checkbox" id="backtest-toggle" class="sr-only peer" onchange="toggleBacktestMode()">
-                        <div class="w-9 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600 peer-checked:after:bg-white"></div>
-                        <span class="ml-2 text-xs font-bold text-gray-400 peer-checked:text-amber-400 uppercase tracking-wide">Backtest</span>
-                    </label>
+                    <!-- Gemini Model Selector Configuration -->
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 mb-1">Pilih Model AI Gemini</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-zinc-500"><i class="fa-solid fa-robot text-[10px]"></i></span>
+                            <select id="geminiModelSelector" class="w-full bg-brandInput border border-brandBorder rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-brandAccent transition-all appearance-none cursor-pointer">
+                                <option value="gemini-3-flash-preview">Gemini 3 Flash (Terbaru / Rekomendasi)</option>
+                                <option value="gemini-3.5-flash">Gemini 3.5 Flash (Kecerdasan Premium)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Save & Clear config actions and sandbox switcher -->
+                    <div class="flex flex-col gap-2.5 pt-1">
+                        <div class="flex gap-2">
+                            <button onclick="saveCredentials()" class="flex-1 bg-brandAccent hover:bg-brandAccentHover text-white py-1.5 rounded-lg text-[10px] font-bold transition-all shadow-md shadow-brandAccent/15">Simpan Kunci</button>
+                            <button onclick="clearCredentials()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all">Bersihkan</button>
+                        </div>
+
+                        <div class="flex items-center justify-between bg-brandDark/60 border border-brandBorder/60 p-2.5 rounded-lg">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] font-bold text-zinc-200">Gunakan Sandbox Mode</span>
+                                <span class="text-[8px] text-zinc-500 mt-0.5 leading-tight">Simulasi harga & lilin tanpa kunci TwelveData</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="sandboxToggle" onchange="toggleSandboxMode()" class="sr-only peer" checked>
+                                <div class="w-7 h-4 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500 peer-checked:after:bg-white"></div>
+                            </label>
+                        </div>
+                    </div>
                 </div>
+            </section>
+
+            <!-- BLOCK 2: ASSET AND INTERVAL TIMEFRAME SELECTOR -->
+            <section class="bg-brandCard border border-brandBorder rounded-xl p-5 relative overflow-hidden transition-all hover:border-zinc-700">
+                <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-simple text-emerald-500"></i> Instrumen & Timeframe
+                </h3>
 
                 <div class="space-y-4">
+                    <!-- Dropdown main categorised instruments -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs text-gray-400 font-medium mb-1.5">Instrumen / Aset</label>
-                            <select id="asset-select" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500 transition">
-                                <option value="XAU/USD">Gold (XAUUSD)</option>
-                                <option value="QQQ">Nasdaq (NAS100)</option>
-                                <option value="EUR/USD">EURUSD</option>
-                                <option value="GBP/USD">GBPUSD</option>
-                                <option value="BTC/USD">Bitcoin (BTCUSD)</option>
+                            <label class="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 mb-1">Aset Pasar</label>
+                            <select id="marketAssetSelector" onchange="handleMarketChange()" class="w-full bg-brandInput border border-brandBorder rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition-all cursor-pointer">
+                                <optgroup label="Forex Major Pairs">
+                                    <option value="EUR/USD" selected>EUR/USD (Euro / US Dollar)</option>
+                                    <option value="GBP/USD">GBP/USD (Great Britain Pound / US Dollar)</option>
+                                    <option value="USD/JPY">USD/JPY (US Dollar / Japanese Yen)</option>
+                                </optgroup>
+                                <optgroup label="Index Futures">
+                                    <option value="SPX">S&P 500 (Standard & Poor's)</option>
+                                    <option value="NDX">NASDAQ 100 (Tech Heavy Index)</option>
+                                </optgroup>
+                                <optgroup label="Commodities Spot">
+                                    <option value="XAU/USD">XAU/USD (Gold / US Dollar Spot)</option>
+                                    <option value="CL">WTI Crude Oil (Energi Spot)</option>
+                                </optgroup>
+                                <optgroup label="Manual Setup">
+                                    <option value="CUSTOM">-- TULIS SIMBOL KUSTOM SENDIRI --</option>
+                                </optgroup>
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-xs text-gray-400 font-medium mb-1.5">Output Candlestick</label>
-                            <select id="candle-size" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500 transition">
-                                <option value="10">10 Candles</option>
-                                <option value="20">20 Candles</option>
-                                <option value="30">30 Candles</option>
-                            </select>
+                        
+                        <!-- Backtest Mode Toggle (Opsi 1) -->
+                        <div class="flex flex-col justify-end items-end pb-1">
+                            <label class="relative inline-flex items-center cursor-pointer select-none">
+                                <input type="checkbox" id="backtest-toggle" class="sr-only peer" onchange="toggleBacktestMode()">
+                                <div class="w-9 h-5 bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-450 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                                <span class="ml-2 text-[10px] font-bold text-zinc-400 peer-checked:text-amber-400 uppercase tracking-wider">Backtest</span>
+                            </label>
                         </div>
                     </div>
 
+                    <!-- OPTION 1: DATETIME PICKER (BACKTEST MODE) -->
                     <div id="backtest-datetime-container" class="hidden border border-amber-500/20 bg-amber-500/5 rounded-xl p-3.5 space-y-3">
-                        <div class="flex items-center justify-between text-xs text-amber-400 font-semibold">
-                            <span><i class="fa-solid fa-clock-rotate-left mr-1"></i> Pengaturan Waktu Historis</span>
-                            <span class="text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded text-white font-mono">NY Time</span>
+                        <div class="flex items-center justify-between text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+                            <span><i class="fa-solid fa-clock-rotate-left mr-1"></i> Titik Akhir Waktu</span>
+                            <span class="bg-amber-500/20 px-1.5 py-0.5 rounded text-white font-mono">NY Time</span>
                         </div>
-                        <div class="grid grid-cols-1 gap-2.5">
-                            <div>
-                                <label class="block text-[11px] text-gray-400 mb-1">Tanggal & Jam Titik Akhir (End Date):</label>
-                                <input type="datetime-local" id="backtest-end-date" class="w-full bg-gray-950 border border-amber-500/30 text-amber-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-amber-500 transition">
-                            </div>
+                        <div>
+                            <input type="datetime-local" id="backtest-end-date" class="w-full bg-brandInput border border-amber-500/30 text-amber-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-amber-500 transition-all">
                         </div>
-                        <p class="text-[10px] text-gray-400 leading-relaxed italic">
-                            *Sistem akan menarik data candlestick historis tepat sebelum tanggal/jam di atas untuk disimulasikan sebagai kondisi pasar real-time ke AI.
+                        <p class="text-[9px] text-zinc-500 leading-relaxed italic">
+                            *TwelveData akan menarik data historis candle tepat sebelum waktu New York di atas.
                         </p>
                     </div>
 
-                    <div>
-                        <label class="block text-xs text-gray-400 font-medium mb-2">Pilih Timeframe Analisis Paralel</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <label class="flex items-center gap-2 bg-gray-950 border border-gray-800 px-3 py-2 rounded-xl cursor-pointer hover:border-gray-700 select-none">
-                                <input type="checkbox" name="timeframe" value="15m" checked class="rounded border-gray-800 text-blue-600 focus:ring-0 bg-gray-900">
-                                <span class="text-xs font-mono font-bold text-gray-300">15m</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-gray-950 border border-gray-800 px-3 py-2 rounded-xl cursor-pointer hover:border-gray-700 select-none">
-                                <input type="checkbox" name="timeframe" value="1h" checked class="rounded border-gray-800 text-blue-600 focus:ring-0 bg-gray-900">
-                                <span class="text-xs font-mono font-bold text-gray-300">1h</span>
-                            </label>
-                            <label class="flex items-center gap-2 bg-gray-950 border border-gray-800 px-3 py-2 rounded-xl cursor-pointer hover:border-gray-700 select-none">
-                                <input type="checkbox" name="timeframe" value="4h" checked class="rounded border-gray-800 text-blue-600 focus:ring-0 bg-gray-900">
-                                <span class="text-xs font-mono font-bold text-gray-300">4h</span>
-                            </label>
+                    <!-- Hidden text fields container for customized tickers -->
+                    <div id="customAssetContainer" class="hidden bg-brandDark/40 p-3 rounded-lg border border-brandBorder/80 space-y-2">
+                        <label class="block text-[9px] font-extrabold uppercase tracking-wider text-zinc-400">Ketik Simbol Kustom Anda</label>
+                        <div class="flex gap-2">
+                            <input id="customAssetInput" type="text" class="flex-1 bg-brandInput border border-brandBorder rounded-lg px-2.5 py-1.5 text-xs text-white uppercase focus:outline-none focus:border-emerald-500 transition-all placeholder:text-zinc-600" placeholder="Contoh: AUD/USD atau GBP/JPY">
+                            <button onclick="applyCustomAsset()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 rounded-lg text-xs font-bold transition-all shrink-0">Pasang</button>
                         </div>
-                        <p class="text-[10px] text-gray-500 mt-1.5"><i class="fa-solid fa-circle-info mr-1"></i>Setiap TF memakan 1 kredit TwelveData. Gunakan secara bijak.</p>
+                        <p class="text-[8px] text-zinc-500 leading-normal">Pastikan simbol Anda sesuai dengan format query bursa global (e.g. "AUD/USD" atau "GBP/JPY")</p>
                     </div>
 
+                    <!-- Multi-Timeframe Checkboxes Configuration Grid -->
                     <div>
-                        <label class="block text-xs text-gray-400 font-medium mb-1.5">Asimilasi Dokumen Strategi (PDF / Aturan ICT)</label>
-                        <div class="border-2 border-dashed border-gray-800 hover:border-gray-700 rounded-xl p-4 text-center bg-gray-950/40 cursor-pointer relative group transition">
-                            <input type="file" id="pdf-strategy-upload" multiple accept=".pdf" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleStrategyUpload(this)">
-                            <div class="space-y-1">
-                                <i class="fa-solid fa-file-pdf text-xl text-gray-500 group-hover:text-blue-400 transition mb-1"></i>
-                                <div class="text-xs font-medium text-gray-300">Unggah Buku Strategi / PDF Aturan Main</div>
-                                <div class="text-[10px] text-gray-500">Mendukung multi-dokumen teks & gambar vision</div>
-                            </div>
+                        <label class="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 mb-2">Pilih Timeframe Analisis (Multi-Timeframe)</label>
+                        <div class="grid grid-cols-4 gap-2 bg-brandDark/60 p-2.5 rounded-lg border border-brandBorder/50">
+                            <label class="flex items-center justify-center p-1.5 bg-brandInput rounded border border-brandBorder/80 cursor-pointer select-none text-[9px] hover:border-zinc-500 text-zinc-300 font-bold font-mono">
+                                <input type="checkbox" name="tfAnalyze" value="1m" class="sr-only peer">
+                                <span class="peer-checked:text-emerald-400">1M</span>
+                            </label>
+                            <label class="flex items-center justify-center p-1.5 bg-brandInput rounded border border-brandBorder/80 cursor-pointer select-none text-[9px] hover:border-zinc-500 text-zinc-300 font-bold font-mono">
+                                <input type="checkbox" name="tfAnalyze" value="5m" class="sr-only peer">
+                                <span class="peer-checked:text-emerald-400">5M</span>
+                            </label>
+                            <label class="flex items-center justify-center p-1.5 bg-brandInput rounded border border-brandBorder/80 cursor-pointer select-none text-[9px] hover:border-zinc-500 text-zinc-300 font-bold font-mono">
+                                <input type="checkbox" name="tfAnalyze" value="15m" class="sr-only peer" checked>
+                                <span class="peer-checked:text-emerald-400">15M</span>
+                            </label>
+                            <label class="flex items-center justify-center p-1.5 bg-brandInput rounded border border-brandBorder/80 cursor-pointer select-none text-[9px] hover:border-zinc-500 text-zinc-300 font-bold font-mono">
+                                <input type="checkbox" name="tfAnalyze" value="1h" class="sr-only peer" checked>
+                                <span class="peer-checked:text-emerald-400">1H</span>
+                            </label>
+                            <label class="flex items-center justify-center p-1.5 bg-brandInput rounded border border-brandBorder/80 cursor-pointer select-none text-[9px] hover:border-zinc-500 text-zinc-300 font-bold font-mono">
+                                <input type="checkbox" name="tfAnalyze" value="4h" class="sr-only peer" checked>
+                                <span class="peer-checked:text-emerald-400">4H</span>
+                            </label>
+                            <label class="flex items-center justify-center p-1.5 bg-brandInput rounded border border-brandBorder/80 cursor-pointer select-none text-[9px] hover:border-zinc-500 text-zinc-300 font-bold font-mono">
+                                <input type="checkbox" name="tfAnalyze" value="1d" class="sr-only peer">
+                                <span class="peer-checked:text-emerald-400">1D</span>
+                            </label>
+                            <label class="flex items-center justify-center p-1.5 bg-brandInput rounded border border-brandBorder/80 cursor-pointer select-none text-[9px] hover:border-zinc-500 text-zinc-300 font-bold font-mono">
+                                <input type="checkbox" name="tfAnalyze" value="1w" class="sr-only peer">
+                                <span class="peer-checked:text-emerald-400">1W</span>
+                            </label>
+                            <label class="flex items-center justify-center p-1.5 bg-brandInput rounded border border-brandBorder/80 cursor-pointer select-none text-[9px] hover:border-zinc-500 text-zinc-300 font-bold font-mono">
+                                <input type="checkbox" name="tfAnalyze" value="1month" class="sr-only peer">
+                                <span class="peer-checked:text-emerald-400">1Mo</span>
+                            </label>
                         </div>
-                        <div id="uploaded-files-list" class="mt-2 space-y-1.5"></div>
                     </div>
+                </div>
+            </section>
 
-                    <button id="btn-start-analysis" onclick="executeMarketAnalysis()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-3 rounded-xl shadow-xl shadow-emerald-600/10 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-brain"></i> Mulai Analisis Pasar
+            <!-- BLOCK 3: MULTI-PDF STRATEGY REPOSITORY BOARD -->
+            <section class="bg-brandCard border border-brandBorder rounded-xl p-5 relative overflow-hidden transition-all hover:border-zinc-700 flex-1 flex flex-col">
+                <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-folder-open text-blue-500"></i> Repositori Strategi PDF</span>
+                    <span id="pdfFileCounter" class="bg-zinc-800 text-[9px] text-zinc-400 px-2 py-0.5 rounded-full border border-brandBorder">0 Berkas</span>
+                </h3>
+
+                <!-- PDF Multi-File Drag and drop area -->
+                <div id="dragDropArea" class="border-2 border-dashed border-brandBorder hover:border-blue-500/80 rounded-xl p-4 text-center cursor-pointer bg-brandDark/30 transition-all relative flex flex-col items-center justify-center min-h-[90px] mb-4 group">
+                    <input type="file" id="pdfFileInput" multiple accept="application/pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <i class="fa-solid fa-cloud-arrow-up text-xl text-zinc-500 group-hover:text-blue-500 transition-colors mb-1.5"></i>
+                    <p class="text-[10px] text-zinc-400 font-semibold">Tarik & Lepas beberapa PDF strategi di sini</p>
+                    <p class="text-[8px] text-zinc-500 mt-1">Atau klik untuk menelusuri folder komputer Anda</p>
+                </div>
+
+                <!-- Custom Scanned/Watermark Images High Fidelity Vision Controller -->
+                <div class="flex items-center justify-between bg-brandDark/40 border border-brandBorder/80 p-2.5 rounded-lg mb-4">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-zinc-300">High-Fidelity Vision Mode</span>
+                        <span class="text-[8px] text-zinc-500 mt-0.5 leading-tight">Gunakan OCR visual untuk PDF gambar / tertutup watermark</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="visionModeToggle" onchange="toggleVisionModeSetting()" class="sr-only peer">
+                        <div class="w-7 h-4 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-500 peer-checked:after:bg-white"></div>
+                    </label>
+                </div>
+
+                <!-- Strategy Registry Document Registry Registry Layout List -->
+                <div class="flex-1 overflow-y-auto space-y-2 max-h-[140px]" id="pdfRegistryContainer">
+                    <div class="text-center py-6 text-zinc-500 flex flex-col items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved text-lg opacity-25"></i>
+                        <p class="text-[9px] font-medium text-zinc-600">Unggah berkas untuk disinkronisasikan ke awan</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BLOCK 4: CUSTOM INSTRUCTIONS AND TRIGGER INITIATOR -->
+            <section class="bg-brandCard border border-brandBorder rounded-xl p-5 relative overflow-hidden transition-all hover:border-zinc-700">
+                <div class="absolute top-0 left-0 w-1 h-full bg-brandAccent"></div>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-pencil text-brandAccent"></i> Instruksi Tambahan (Teks)
+                </h3>
+                
+                <div class="space-y-4">
+                    <textarea id="customInstructionInput" class="w-full bg-brandInput border border-brandBorder rounded-lg p-2.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-brandAccent transition-all h-[75px] resize-none" placeholder="Masukkan materi teks pelengkap, syarat entri khusus, atau batasan risiko di sini..."></textarea>
+                    
+                    <button id="startAnalysisBtn" onclick="startFullAnalysis()" class="w-full bg-brandAccent hover:bg-brandAccentHover text-white py-3 rounded-xl text-xs font-bold transition-all shadow-lg shadow-brandAccent/25 flex items-center justify-center gap-2 font-mono uppercase tracking-wider">
+                        <i id="btnLoaderIcon" class="fa-solid fa-play"></i> <span id="btnLoaderText">Mulai Analisis Pasar</span>
                     </button>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <section class="xl:col-span-8 flex flex-col gap-6">
+        </aside>
+
+        <!-- CHART DISPLAY AND TERMINAL CORE SECTION (RIGHT COLUMN - 8 SPAN) -->
+        <section class="lg:col-span-8 flex flex-col gap-6 w-full">
             
-            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-1 h-[320px] overflow-hidden relative">
-                <div class="absolute top-3 left-3 z-10 bg-gray-950/80 border border-gray-800 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-gray-300 flex items-center gap-1.5 backdrop-blur-md">
-                    <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Visualisasi Live Chart
+            <!-- LIVE TICKER HEADER INFORMATION -->
+            <div class="bg-brandCard border border-brandBorder rounded-xl px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-2.5 h-2.5 rounded-full bg-brandSuccess" id="marketApiStatusIndicator"></div>
+                    <div>
+                        <span id="tickerTitle" class="text-xs font-black text-white tracking-widest font-mono uppercase">EUR/USD</span>
+                        <span id="tickerCategory" class="text-[9px] text-zinc-500 font-bold ml-1.5 uppercase tracking-wide">Forex Major</span>
+                    </div>
                 </div>
-                <div id="tradingview-widget-container" class="w-full h-full rounded-xl opacity-85"></div>
+                <div class="flex items-center gap-4 sm:gap-6 ml-auto">
+                    <div>
+                        <p class="text-[8px] text-zinc-500 font-bold uppercase tracking-widest">Kutipan Harga</p>
+                        <p id="tickerPrice" class="text-xs sm:text-sm font-extrabold text-brandSuccess font-mono">Loading...</p>
+                    </div>
+                    <!-- Volume 24H disembunyikan menggunakan kelas hidden agar visualnya bersih -->
+                    <div class="hidden">
+                        <p class="text-[8px] text-zinc-500 font-bold uppercase tracking-widest">Volume (24H)</p>
+                        <p id="tickerVolume" class="text-xs sm:text-sm font-extrabold text-zinc-200 font-mono">Loading...</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl flex flex-col overflow-hidden min-h-[400px]">
+            <!-- LIVE CHART CONTAINER BOARD -->
+            <div class="bg-brandCard border border-brandBorder rounded-xl overflow-hidden shadow-sm h-[320px] sm:h-[400px] relative">
+                <!-- Overlay loading/refreshing notification -->
+                <div id="chartLoadingOverlay" class="absolute inset-0 bg-brandDark/80 flex items-center justify-center z-20 flex-col gap-3 transition-opacity duration-300 hidden">
+                    <i class="fa-solid fa-circle-notch animate-spin text-3xl text-brandAccent"></i>
+                    <p class="text-xs text-zinc-400">Memuat Visual Grafik TradingView...</p>
+                </div>
+                <div id="tradingview-chart-container" class="w-full h-full"></div>
+            </div>
+
+            <!-- AI EXPERT TERMINAL REPORT CARD -->
+            <div class="bg-brandCard border border-brandBorder rounded-xl flex-1 flex flex-col min-h-[380px] relative overflow-hidden transition-all duration-300 hover:border-zinc-700">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brandAccent to-emerald-500"></div>
                 
-                <div class="bg-gray-950/80 border-b border-gray-800 px-4 py-2 flex items-center justify-between">
-                    <div class="flex gap-2">
-                        <button id="tab-active-btn" onclick="switchTerminalTab('active')" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition border border-transparent bg-gray-900 text-blue-400 border-gray-800">
-                            <i class="fa-solid fa-terminal mr-1.5"></i> Terminal Aktif
-                        </button>
-                        <button id="tab-history-btn" onclick="switchTerminalTab('history')" class="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition border border-transparent text-gray-400 hover:bg-gray-900/50">
-                            <i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Riwayat Analisis (<span id="history-count">0</span>)
-                        </button>
+                <!-- Terminal Header and Actions -->
+                <div class="bg-brandCard/90 border-b border-brandBorder px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="flex space-x-1">
+                            <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+                        </span>
+                        <div class="h-4 w-[1px] bg-brandBorder"></div>
+                        <!-- Tabs Navigation Container -->
+                        <div class="flex space-x-1 bg-brandDark/50 p-0.5 rounded-lg border border-brandBorder/60">
+                            <button onclick="switchTerminalTab('active')" id="tabBtnActive" class="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono uppercase tracking-wider transition-all bg-brandAccent text-white flex items-center gap-1">
+                                <i class="fa-solid fa-terminal text-[9px]"></i> Terminal Aktif
+                            </button>
+                            <button onclick="switchTerminalTab('history')" id="tabBtnHistory" class="px-2.5 py-1 rounded-md text-[10px] font-bold font-mono uppercase tracking-wider transition-all text-zinc-400 hover:text-zinc-200 flex items-center gap-1">
+                                <i class="fa-solid fa-clock-rotate-left text-[9px]"></i> Riwayat <span id="historyCounterBadge" class="ml-1 bg-zinc-800 text-zinc-300 text-[8px] px-1.5 py-0.2 rounded-full border border-brandBorder/50">0</span>
+                            </button>
+                        </div>
                     </div>
-
-                    <div class="flex items-center gap-2">
-                        <label class="relative inline-flex items-center cursor-pointer select-none scale-90">
-                            <input type="checkbox" id="sandbox-toggle" class="sr-only peer">
-                            <div class="w-9 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 peer-checked:after:bg-white"></div>
-                            <span class="ml-2 text-[10px] font-bold text-gray-500 peer-checked:text-blue-400 uppercase tracking-wide">Sandbox Mode</span>
-                        </label>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="copyToClipboard()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5" title="Copy to Clipboard">
+                            <i class="fa-regular fa-copy"></i> Copy
+                        </button>
+                        <button onclick="downloadReportAsText()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5" title="Download Report">
+                            <i class="fa-solid fa-download"></i> Download
+                        </button>
                     </div>
                 </div>
 
-                <div class="p-5 flex-1 flex flex-col bg-gray-950/30">
-                    
-                    <div id="terminal-active-pane" class="flex-1 flex flex-col">
-                        
-                        <div id="terminal-loading-screen" class="hidden my-auto flex flex-col items-center justify-center p-8 text-center space-y-4">
-                            <div class="relative w-16 h-16 flex items-center justify-center">
-                                <div class="absolute inset-0 rounded-full border-4 border-emerald-500/10 border-t-emerald-400 animate-spin"></div>
-                                <i class="fa-solid fa-brain text-xl text-emerald-400 animate-pulse"></i>
+                <!-- Terminal Content Panels Container -->
+                <div class="flex-1 flex flex-col overflow-hidden relative">
+                    <!-- Active Terminal Panel -->
+                    <div id="terminalActivePanel" class="flex-1 p-5 overflow-y-auto leading-relaxed text-zinc-300">
+                        <div class="flex flex-col items-center justify-center text-center py-20 text-zinc-500 h-full">
+                            <div class="relative mb-4">
+                                <i class="fa-solid fa-brain text-5xl opacity-20"></i>
+                                <div class="absolute -top-1 -right-1 bg-brandAccent text-[8px] text-white py-0.5 px-1.5 rounded-full uppercase tracking-widest font-extrabold animate-bounce">Ready</div>
                             </div>
-                            <div class="space-y-1.5 max-w-md">
-                                <h4 class="text-sm font-bold text-gray-200">AI Sedang Melakukan Kalkulasi Struktur Pasar...</h4>
-                                <p class="text-xs text-gray-500 italic">Mengonstruksi algoritma pencocokan pola ICT & strategi PDF Anda</p>
-                            </div>
-                            <div class="w-full max-w-sm bg-gray-950 border border-gray-800 rounded-xl p-3 text-left">
-                                <div id="live-log-tracker" class="terminal-text text-[11px] text-gray-400 space-y-1"></div>
-                            </div>
-                        </div>
-
-                        <div id="terminal-placeholder-screen" class="my-auto flex flex-col items-center justify-center text-center p-8 space-y-3">
-                            <div class="text-gray-700 bg-gray-900/40 p-4 rounded-2xl border border-gray-800/60">
-                                <i class="fa-solid fa-folder-open text-3xl"></i>
-                            </div>
-                            <div class="max-w-xs">
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">Terminal Kosong</h3>
-                                <p class="text-xs text-gray-500 mt-1">Pilih parameter di bilah kiri kemudian klik "Mulai Analisis Pasar" untuk memicu mesin kecerdasan buatan.</p>
-                            </div>
-                        </div>
-
-                        <div id="terminal-output-screen" class="hidden flex-1 flex flex-col">
-                            <div class="flex items-center justify-between border-b border-gray-800 pb-3 mb-4">
-                                <div class="flex items-center gap-2">
-                                    <span id="output-badge-mode" class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-bold uppercase font-mono">LIVE MATRIX</span>
-                                    <h3 id="output-title-text" class="text-sm font-bold text-gray-200">Laporan Komparatif ICT</h3>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button onclick="copyOutputContent('active-raw-text')" class="text-xs bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5">
-                                        <i class="fa-solid fa-copy"></i> Salin
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="active-raw-text" class="terminal-text text-xs leading-relaxed text-gray-300 overflow-y-auto max-h-[360px] whitespace-pre-wrap select-text pr-2"></div>
-                        </div>
-
-                    </div>
-
-                    <div id="terminal-history-pane" class="hidden flex-1">
-                        <div class="overflow-x-auto w-full">
-                            <table class="w-full text-left text-xs border-collapse">
-                                <thead>
-                                    <tr class="border-b border-gray-800 text-gray-400 font-semibold uppercase tracking-wider">
-                                        <th class="pb-3 pl-2">Waktu (NY)</th>
-                                        <th class="pb-3">Instrumen</th>
-                                        <th class="pb-3">Mode</th>
-                                        <th class="pb-3">Timeframe</th>
-                                        <th class="pb-3 text-right pr-2">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="history-table-body" class="divide-y divide-gray-800/50 text-gray-300">
-                                    <tr>
-                                        <td colspan="5" class="py-8 text-center text-gray-500 italic">Belum ada rekam jejak laporan riwayat analisis pasar yang tersimpan.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <h3 class="text-sm font-bold text-zinc-400 mb-1">Menunggu Instruksi Analisis Anda</h3>
+                            <p class="text-xs text-zinc-600 max-w-sm font-medium leading-relaxed">Unggah dokumen strategi PDF Anda di kiri, tentukan parameter multi-timeframe, lalu klik "Mulai Analisis". Otak AI akan membandingkan keselarasan lilin teknikal secara real-time.</p>
                         </div>
                     </div>
 
+                    <!-- History Panel (Hidden by default) -->
+                    <div id="terminalHistoryPanel" class="hidden flex-1 p-5 overflow-y-auto space-y-3">
+                        <div class="text-center py-16 text-zinc-500 flex flex-col items-center justify-center gap-2">
+                            <i class="fa-solid fa-folder-open text-3xl opacity-20"></i>
+                            <p class="text-xs font-semibold">Belum Ada Riwayat Analisis</p>
+                            <p class="text-[10px] text-zinc-600">Jalankan "Mulai Analisis" untuk otomatis mendokumentasikan log di sini.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
+
         </section>
+
     </main>
 
-    <div id="history-premium-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-        <div class="bg-gray-900 border border-gray-800 w-full max-w-3xl rounded-2xl flex flex-col shadow-2xl shadow-black/80 max-h-[85vh] overflow-hidden">
-            <div class="bg-gray-950 px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                    <div class="bg-amber-600/10 border border-amber-500/20 text-amber-400 p-2 rounded-xl">
-                        <i class="fa-solid fa-clock-rotate-left"></i>
-                    </div>
-                    <div>
-                        <h3 id="modal-header-title" class="text-sm font-bold text-gray-200">Arsip Riwayat Laporan Analisis</h3>
-                        <p id="modal-header-meta" class="text-[11px] text-gray-500 font-mono mt-0.5">XAU/USD | 15m, 1h</p>
-                    </div>
+    <!-- FLOATING MODAL OVERLAY UNTUK PENAMPIL RIWAYAT MANDIRI -->
+    <div id="historyModal" class="fixed inset-0 bg-brandDark/95 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-brandCard border border-brandBorder w-full max-w-4xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative">
+            <!-- Modal Header -->
+            <div class="bg-brandCard/95 border-b border-brandBorder px-5 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="bg-brandAccent/10 text-brandAccent text-[10px] px-2.5 py-1 rounded-md font-mono font-bold uppercase border border-brandAccent/20 flex items-center gap-1 shrink-0">
+                        <i class="fa-solid fa-clock-rotate-left animate-pulse"></i> Arsip Laporan
+                    </span>
+                    <span id="modalAssetTitle" class="text-xs font-mono font-extrabold text-white truncate tracking-wider">EUR/USD</span>
                 </div>
-                <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-white bg-gray-900 hover:bg-gray-800 border border-gray-800 p-2 rounded-xl transition">
-                    <i class="fa-solid fa-xmark text-sm"></i>
-                </button>
-            </div>
-            <div class="p-6 overflow-y-auto bg-gray-950/20 flex-1">
-                <div id="modal-body-content" class="terminal-text text-xs text-gray-300 leading-relaxed whitespace-pre-wrap select-text"></div>
-            </div>
-            <div class="bg-gray-950 px-6 py-4 border-t border-gray-800 flex justify-between items-center">
-                <span class="text-[10px] text-gray-500 font-medium italic">*Laporan ini adalah salinan snapshot data historis bursa terarsip</span>
-                <div class="flex gap-2">
-                    <button id="modal-btn-copy" class="bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:text-white text-gray-300 text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-copy"></i> Salin Teks
+                <div class="flex items-center gap-2">
+                    <button onclick="copyModalContent()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5" title="Salin Riwayat">
+                        <i class="fa-regular fa-copy"></i> <span class="hidden sm:inline text-[11px]">Copy</span>
                     </button>
-                    <button id="modal-btn-download" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-download"></i> Unduh TXT
+                    <button onclick="downloadModalContent()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5" title="Unduh Riwayat">
+                        <i class="fa-solid fa-download"></i> <span class="hidden sm:inline text-[11px]">Download</span>
+                    </button>
+                    <button onclick="closeHistoryModal()" class="bg-zinc-800 hover:bg-red-950 text-zinc-300 hover:text-red-400 p-2 rounded-lg text-xs transition-all flex items-center justify-center border border-brandBorder">
+                        <i class="fa-solid fa-xmark text-sm px-1"></i>
                     </button>
                 </div>
+            </div>
+            <!-- Modal Content Body -->
+            <div class="flex-1 p-6 overflow-y-auto leading-relaxed text-zinc-300" id="historyModalBody">
+                <!-- Konten laporan historis dirender di sini -->
             </div>
         </div>
     </div>
 
-    <div id="auth-modal-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-        <div class="bg-gray-900 border border-gray-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl flex flex-col space-y-4">
-            <div class="flex justify-between items-center">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-user-shield text-blue-400"></i> Akun Sinkronisasi Firebase
-                </h3>
-                <button onclick="toggleAuthModal()" class="text-gray-500 hover:text-gray-300"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1">Email</label>
-                    <input type="email" id="auth-email-input" placeholder="ari@trader.com" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 font-mono focus:outline-none focus:border-blue-500 transition">
-                </div>
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1">Password</label>
-                    <input type="password" id="auth-pass-input" placeholder="******" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 font-mono focus:outline-none focus:border-blue-500 transition">
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2 pt-2">
-                <button onclick="handleAuthAction('login')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 rounded-xl transition">Masuk Log</button>
-                <button onclick="handleAuthAction('register')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold py-2 rounded-xl border border-gray-700 transition">Daftar Baru</button>
-            </div>
-        </div>
-    </div>
+    <!-- GLOBAL POPUP TOAST SYSTEM -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full"></div>
 
-    <footer class="border-t border-gray-800 bg-gray-950 px-6 py-3 flex justify-between items-center text-[11px] text-gray-500 font-medium">
-        <div>Status Konektivitas: <span class="text-emerald-500 font-bold"><span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span> Terhubung</span></div>
-        <div>&copy; 2026 Ari Trading Analyst Pro. Powered by Gemini Core Vision AI & TwelveData Engine.</div>
-    </footer>
+    <!-- Firebase Integrations (Module) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <script>
-        let currentUser = null;
-        let uploadedFiles = [];
-        let globalHistoryList = [];
+        // Konfigurasi Firebase dari pengguna
+        const firebaseConfig = {
+            apiKey: "AIzaSyD5MZ01KZ68BwXJh4NKUsqdVePZpnfAWek",
+            authDomain: "ai-analist-id.firebaseapp.com",
+            projectId: "ai-analist-id",
+            storageBucket: "ai-analist-id.firebasestorage.app",
+            messagingSenderId: "540011504603",
+            appId: "1:540011504603:web:85db0d62939fa5b3777dfe",
+            measurementId: "G-GRNH9QLJH9"
+        };
 
-        // Dynamic Embedded Live TradingView Chart Frame Constructor
-        function initTradingViewWidget(symbol) {
-            let tvSymbol = "FX_IDC:XAUUSD";
-            if (symbol === "QQQ") tvSymbol = "NASDAQ:QQQ";
-            if (symbol === "EUR/USD") tvSymbol = "FX:EURUSD";
-            if (symbol === "GBP/USD") tvSymbol = "FX:GBPUSD";
-            if (symbol === "BTC/USD") tvSymbol = "BINANCE:BTCUSDT";
+        const appId = firebaseConfig.projectId || 'ai-analist-id';
 
-            const container = document.getElementById('tradingview-widget-container');
-            container.innerHTML = ''; 
+        let app, db, auth;
+        let isFirebaseInitialized = false;
+        let unsubscribeStrategies = null;
+        let unsubscribeHistory = null;
 
-            const iframe = document.createElement('iframe');
-            iframe.src = `https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${encodeURIComponent(tvSymbol)}&interval=15&hidesidetoolbar=1&symboledit=0&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=America%2FNew_York`;
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.border = 'none';
-            iframe.setAttribute('scrolling', 'no');
-            container.appendChild(iframe);
+        // Inisialisasi SDK Firebase dengan konfigurasi static
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            isFirebaseInitialized = true;
+            console.log("Firebase berhasil dihubungkan ke project: " + appId);
+        } catch (err) {
+            console.error("Firebase SDK init failed:", err);
         }
 
+        // Set worker options path dynamically using CDN library configuration
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Local Storage State Variables holding active session data
+        let extractedPdfs = [];
+        let analysisHistory = [];
+        let isAnalyzingState = false;
+        let tvWidgetInstance = null;
+        let isVisionModeForced = false;
+        let currentAuthMode = 'login'; // 'login' or 'register'
+        let isGuestModeActive = false;
+
+        // Penampung data riwayat aktif untuk aksi modal
+        let activeHistoryOutput = "";
+        let activeHistoryAsset = "";
+
+        // Pop alert notifications with various context themes
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            
+            let bgClass = 'bg-zinc-900 border-zinc-700 text-zinc-300';
+            let iconClass = 'fa-circle-info text-blue-400';
+            
+            if (type === 'success') {
+                bgClass = 'bg-zinc-900 border-emerald-800 text-zinc-200';
+                iconClass = 'fa-circle-check text-emerald-400';
+            } else if (type === 'danger') {
+                bgClass = 'bg-zinc-900 border-red-950 text-zinc-200';
+                iconClass = 'fa-circle-exclamation text-brandDanger';
+            } else if (type === 'warning') {
+                bgClass = 'bg-zinc-900 border-yellow-950 text-zinc-200';
+                iconClass = 'fa-triangle-exclamation text-yellow-500';
+            }
+
+            const html = `
+                <div id="${toastId}" class="flex items-center justify-between p-3.5 rounded-xl border ${bgClass} shadow-2xl transition-all duration-300 translate-y-3 opacity-0">
+                    <div class="flex items-center space-x-2.5 min-w-0">
+                        <i class="fa-solid ${iconClass} text-sm"></i>
+                        <p class="text-[11px] font-semibold leading-normal truncate max-w-[280px]">${message}</p>
+                    </div>
+                    <button onclick="dismissToast('${toastId}')" class="text-zinc-500 hover:text-zinc-300 ml-3 shrink-0"><i class="fa-solid fa-xmark text-xs"></i></button>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', html);
+            
+            setTimeout(() => {
+                const toastEl = document.getElementById(toastId);
+                if (toastEl) {
+                    toastEl.classList.remove('translate-y-3', 'opacity-0');
+                    toastEl.classList.add('translate-y-0', 'opacity-100');
+                }
+            }, 10);
+
+            setTimeout(() => {
+                dismissToast(toastId);
+            }, 5000);
+        }
+
+        function dismissToast(id) {
+            const toastEl = document.getElementById(id);
+            if (toastEl) {
+                toastEl.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toastEl.remove(), 300);
+            }
+        }
+
+        // Toggle input eye icons to visualize plain values
+        function toggleVisibility(inputId) {
+            const field = document.getElementById(inputId);
+            if (!field) return;
+            field.type = field.type === 'password' ? 'text' : 'password';
+        }
+
+        // Perhitungan Tanggal New York yang tangguh untuk mencegah masalah pergeseran hari
+        function updateCurrentTime() {
+            try {
+                // sv-SE mengembalikan string dengan format YYYY-MM-DD HH:MM:SS yang bersih dan stabil
+                const formatted = new Date().toLocaleString("sv-SE", { timeZone: "America/New_York" });
+                document.getElementById('system-time').innerText = formatted;
+            } catch(err) {
+                document.getElementById('system-time').innerText = new Date().toISOString().replace('T', ' ').slice(0, 19);
+            }
+        }
+
+        // Load cached developer keys from Firestore database if logged in, or local storage if guest
+        async function loadSavedCredentials() {
+            // Default Fallback to localStorage
+            const savedGemini = localStorage.getItem('gemini_key');
+            const savedMarket = localStorage.getItem('market_key');
+            
+            if (savedGemini) document.getElementById('geminiApiKey').value = savedGemini;
+            if (savedMarket) {
+                document.getElementById('marketApiKey').value = savedMarket;
+                document.getElementById('sandboxToggle').checked = false;
+                toggleSandboxMode();
+            }
+
+            // If Firebase authenticated, prioritize Firestore Keys (RULE 3 - Auth guard)
+            if (isFirebaseInitialized && auth && auth.currentUser) {
+                const userId = auth.currentUser.uid;
+                // RULE 1: STRICT PATH
+                const credDocRef = doc(db, 'artifacts', appId, 'users', userId, 'credentials', 'apiKeys');
+                try {
+                    const docSnap = await getDoc(credDocRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.geminiKey) {
+                            document.getElementById('geminiApiKey').value = data.geminiKey;
+                            localStorage.setItem('gemini_key', data.geminiKey);
+                        }
+                        if (data.marketKey) {
+                            document.getElementById('marketApiKey').value = data.marketKey;
+                            localStorage.setItem('market_key', data.marketKey);
+                            document.getElementById('sandboxToggle').checked = false;
+                            toggleSandboxMode();
+                        }
+                    }
+                } catch (e) {
+                    console.error("Firestore keys retrieval failure:", e);
+                }
+            }
+        }
+
+        async function saveCredentials() {
+            const gemini = document.getElementById('geminiApiKey').value.trim();
+            const market = document.getElementById('marketApiKey').value.trim();
+
+            if (gemini) localStorage.setItem('gemini_key', gemini);
+            if (market) {
+                localStorage.setItem('market_key', market);
+                // Matikan Sandbox otomatis jika API Key dimasukkan
+                document.getElementById('sandboxToggle').checked = false;
+                toggleSandboxMode();
+            }
+
+            // Sync to Cloud Firestore if logged in (RULE 1 & RULE 3)
+            if (isFirebaseInitialized && auth && auth.currentUser && !isGuestModeActive) {
+                const userId = auth.currentUser.uid;
+                const credDocRef = doc(db, 'artifacts', appId, 'users', userId, 'credentials', 'apiKeys');
+                try {
+                    await setDoc(credDocRef, {
+                        geminiKey: gemini,
+                        marketKey: market,
+                        updatedAt: Date.now()
+                    });
+                } catch (err) {
+                    console.error("Cloud credentials sync failed:", err);
+                    showToast("Gagal menyinkronkan kunci ke awan.", "danger");
+                    return;
+                }
+            }
+
+            showToast("Kredensial API Key berhasil didokumentasikan.", "success");
+            handleMarketChange();
+        }
+
+        async function clearCredentials() {
+            localStorage.removeItem('gemini_key');
+            localStorage.removeItem('market_key');
+            document.getElementById('geminiApiKey').value = '';
+            document.getElementById('marketApiKey').value = '';
+            document.getElementById('sandboxToggle').checked = true;
+            toggleSandboxMode();
+
+            // Clear Firestore Keys if logged in
+            if (isFirebaseInitialized && auth && auth.currentUser && !isGuestModeActive) {
+                const userId = auth.currentUser.uid;
+                const credDocRef = doc(db, 'artifacts', appId, 'users', userId, 'credentials', 'apiKeys');
+                try {
+                    await deleteDoc(credDocRef);
+                } catch (e) {
+                    console.error("Gagal membersihkan kunci awan:", e);
+                }
+            }
+
+            showToast("Kredensial API berhasil dibersihkan.", "info");
+        }
+
+        function toggleSandboxMode() {
+            const isSandbox = document.getElementById('sandboxToggle').checked;
+            const statusIndicator = document.getElementById('marketApiStatusIndicator');
+            
+            if (isSandbox) {
+                statusIndicator.className = "w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse";
+                showToast("Berjalan dalam Sandbox Mode. Data lilin disimulasikan.", "warning");
+            } else {
+                statusIndicator.className = "w-2.5 h-2.5 rounded-full bg-brandSuccess";
+                showToast("Mencoba menghubungkan server live data TwelveData.", "success");
+            }
+            handleMarketChange();
+        }
+
+        function toggleVisionModeSetting() {
+            isVisionModeForced = document.getElementById('visionModeToggle').checked;
+            if (isVisionModeForced) {
+                showToast("Vision Mode Aktif: PDF akan dipindai sebagai visual gambar resolusi tinggi.", "success");
+            } else {
+                showToast("Vision Mode Nonaktif: PDF diproses dalam ekstraksi teks asinkron.", "info");
+            }
+        }
+
+        // On document load startup initialization sequences
         window.addEventListener('DOMContentLoaded', () => {
-            initTradingViewWidget(document.getElementById('asset-select').value);
-            loadLocalCredentials();
-            startNewYorkClock();
+            loadSavedCredentials();
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
             
-            document.getElementById('asset-select').addEventListener('change', (e) => {
-                initTradingViewWidget(e.target.value);
-            });
-            
-            // Atur default waktu backtest ke kemarin jam 10 pagi NY
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            yesterday.setHours(10, 0, 0, 0);
-            const formatted = yesterday.toISOString().slice(0, 16);
-            document.getElementById('backtest-end-date').value = formatted;
+            // Start default chart loading sequence (e.g. EUR/USD)
+            handleMarketChange();
+            setupDragAndDrop();
+
+            // Setup authentication status observer
+            if (isFirebaseInitialized) {
+                onAuthStateChanged(auth, (user) => {
+                    if (user && !isGuestModeActive) {
+                        // User is signed in
+                        document.getElementById('authScreen').classList.add('hidden');
+                        document.getElementById('userEmailBadge').innerText = user.email;
+                        document.getElementById('logoutBtn').classList.remove('hidden');
+                        document.getElementById('backToLoginBtn').classList.add('hidden');
+                        showToast(`Trader terhubung: ${user.email}`, 'success');
+                        
+                        // Load saved API Keys from Firestore on successful auth
+                        loadSavedCredentials();
+
+                        // Subscribe to Firestore for real-time document sync
+                        subscribeUserStrategies(user.uid);
+                        subscribeUserHistory(user.uid);
+                    } else if (!isGuestModeActive) {
+                        // User is signed out and not in guest mode
+                        document.getElementById('authScreen').classList.remove('hidden');
+                        if (unsubscribeStrategies) {
+                            unsubscribeStrategies();
+                            unsubscribeStrategies = null;
+                        }
+                        if (unsubscribeHistory) {
+                            unsubscribeHistory();
+                            unsubscribeHistory = null;
+                        }
+                        clearExtractedPdfsState();
+                        clearHistoryState();
+                    }
+                });
+            } else {
+                // If Firebase is not initialized, we run in standalone local mode automatically
+                handleGuestModeActivation();
+                showToast("Firebase Config tidak terdeteksi. Berjalan dalam mode lokal offline.", "warning");
+            }
         });
 
-        // Live Clock Synced to New York Time
-        function startNewYorkClock() {
-            setInterval(() => {
-                const options = {
-                    timeZone: 'America/New_York',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false
-                };
-                const formatter = new Intl.DateTimeFormat('en-US', options);
-                const nyTime = formatter.format(new Date());
-                
-                const dateOptions = {
-                    timeZone: 'America/New_York',
-                    year: 'numeric',
-                    month: 'short',
-                    day: '2-digit'
-                };
-                const dateFormatter = new Intl.DateTimeFormat('en-US', dateOptions);
-                const nyDate = dateFormatter.format(new Date());
-                
-                document.getElementById('ny-clock').innerHTML = `<i class="fa-regular fa-clock text-emerald-400 mr-1.5"></i> ${nyDate} - ${nyTime}`;
-            }, 1000);
-        }
+        // Subscribe to Firestore real-time strategy records (RULE 1 & RULE 2)
+        function subscribeUserStrategies(userId) {
+            if (!db) return;
 
-        // Handle Backtest Mode Switch Layout Toggle (OPTION 1 ENGINE LOGIC)
-        function toggleBacktestMode() {
-            const isChecked = document.getElementById('backtest-toggle').checked;
-            const container = document.getElementById('backtest-datetime-container');
-            const badgeMode = document.getElementById('output-badge-mode');
-            
-            if (isChecked) {
-                container.classList.remove('hidden');
-                if (badgeMode) {
-                    badgeMode.className = "text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-bold uppercase font-mono";
-                    badgeMode.textContent = "BACKTEST PARADIGM";
-                }
-            } else {
-                container.classList.add('hidden');
-                if (badgeMode) {
-                    badgeMode.className = "text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-bold uppercase font-mono";
-                    badgeMode.textContent = "LIVE MATRIX";
-                }
-            }
-        }
+            // RULE 1: STRICT PATH
+            const strategiesCol = collection(db, 'artifacts', appId, 'users', userId, 'strategies');
 
-        function togglePasswordVisibility(id, btn) {
-            const el = document.getElementById(id);
-            if (el.type === 'password') {
-                el.type = 'text';
-                btn.innerHTML = '<i class="fa-solid fa-eye-slash text-xs"></i>';
-            } else {
-                el.type = 'password';
-                btn.innerHTML = '<i class="fa-solid fa-eye text-xs"></i>';
-            }
-        }
-
-        function handleStrategyUpload(input) {
-            const files = input.files;
-            const container = document.getElementById('uploaded-files-list');
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                if (!uploadedFiles.some(f => f.name === file.name)) {
-                    uploadedFiles.push(file);
-                    
-                    const el = document.createElement('div');
-                    el.className = "flex items-center justify-between bg-gray-950/80 border border-gray-800 px-2.5 py-1.5 rounded-lg text-xs font-mono";
-                    el.innerHTML = `
-                        <span class="text-gray-300 max-w-[220px] truncate"><i class="fa-regular fa-file-pdf text-red-400 mr-1.5"></i>${file.name}</span>
-                        <button onclick="removeUploadedFile('${file.name}', this)" class="text-gray-500 hover:text-red-400 transition ml-2"><i class="fa-solid fa-trash-can"></i></button>
-                    `;
-                    container.appendChild(el);
-                }
-            }
-        }
-
-        function removeUploadedFile(name, btnElement) {
-            uploadedFiles = uploadedFiles.filter(f => f.name !== name);
-            btnElement.parentElement.remove();
-        }
-
-        function saveApiKeys() {
-            const geminiKey = document.getElementById('gemini-key-input').value;
-            const twelveKey = document.getElementById('twervedata-key-input').value;
-            
-            localStorage.setItem('gemini_key_pro', geminiKey);
-            localStorage.setItem('twervedata_key_pro', twelveKey);
-            
-            if (currentUser) {
-                console.log(`Saved credentials to secure path: artifacts/trading_app/users/${currentUser.uid}/settings/api_keys`);
-                alert('Sukses menyinkronkan API key ke Cloud Firestore Akun Anda!');
-            } else {
-                alert('API Key tersimpan secara lokal di browser Anda (Mode Tamu). Masuk akun untuk sinkronisasi cloud.');
-            }
-        }
-
-        function loadLocalCredentials() {
-            if (localStorage.getItem('gemini_key_pro')) {
-                document.getElementById('gemini-key-input').value = localStorage.getItem('gemini_key_pro');
-            }
-            if (localStorage.getItem('twervedata_key_pro')) {
-                document.getElementById('twervedata-key-input').value = localStorage.getItem('twervedata_key_pro');
-            }
-        }
-
-        function toggleAuthModal() {
-            const el = document.getElementById('auth-modal-overlay');
-            el.classList.toggle('hidden');
-        }
-
-        function handleAuthAction(type) {
-            const email = document.getElementById('auth-email-input').value;
-            if(!email) return alert('Masukkan email valid!');
-            
-            currentUser = { email: email, uid: "usr_" + Math.random().toString(36).substr(2, 9) };
-            
-            document.getElementById('storage-badge').className = "text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-md";
-            document.getElementById('storage-badge').textContent = "Cloud Firestore Sync Active";
-            
-            document.getElementById('auth-status-container').innerHTML = `
-                <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-blue-400"></div>
-                    <span class="text-xs text-gray-300 font-mono font-medium max-w-[80px] truncate">${email}</span>
-                    <button onclick="handleLogout()" class="text-[10px] text-gray-500 hover:text-red-400 border border-gray-800 px-1.5 py-0.5 rounded transition">Keluar</button>
-                </div>
-            `;
-            
-            saveApiKeys();
-            toggleAuthModal();
-        }
-
-        function handleLogout() {
-            currentUser = null;
-            document.getElementById('storage-badge').className = "text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-md";
-            document.getElementById('storage-badge').textContent = "Mode Tamu (Lokal)";
-            
-            document.getElementById('auth-status-container').innerHTML = `
-                <button onclick="toggleAuthModal()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-lg border border-gray-700 transition">
-                    <i class="fa-solid fa-user-lock mr-1"></i> Login / Register
-                </button>
-            `;
-            alert('Logout berhasil. Aplikasi kembali ke mode penyimpanan lokal browser.');
-        }
-
-        function switchTerminalTab(tab) {
-            const activeBtn = document.getElementById('tab-active-btn');
-            const historyBtn = document.getElementById('tab-history-btn');
-            const activePane = document.getElementById('terminal-active-pane');
-            const historyPane = document.getElementById('terminal-history-pane');
-
-            if (tab === 'active') {
-                activeBtn.className = "px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition border border-transparent bg-gray-900 text-blue-400 border-gray-800";
-                historyBtn.className = "px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition border border-transparent text-gray-400 hover:bg-gray-900/50";
-                activePane.classList.remove('hidden');
-                historyPane.classList.add('hidden');
-            } else {
-                historyBtn.className = "px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition border border-transparent bg-gray-900 text-blue-400 border-gray-800";
-                activeBtn.className = "px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition border border-transparent text-gray-400 hover:bg-gray-900/50";
-                historyPane.classList.remove('hidden');
-                activePane.classList.add('hidden');
-                renderHistoryTable();
-            }
-        }
-
-        function appendTerminalLog(text, delay) {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    const tracker = document.getElementById('live-log-tracker');
-                    if (tracker) {
-                        const logRow = document.createElement('div');
-                        logRow.className = "flex items-start gap-1.5";
-                        logRow.innerHTML = `<span class="text-emerald-400 font-bold font-mono">✓</span> <span class="text-gray-300 leading-tight">${text}</span>`;
-                        tracker.appendChild(logRow);
-                    }
-                    resolve();
-                }, delay);
+            // RULE 2: No Complex Queries (Simple collection query)
+            unsubscribeStrategies = onSnapshot(strategiesCol, (snapshot) => {
+                extractedPdfs = [];
+                snapshot.forEach((docSnap) => {
+                    extractedPdfs.push(docSnap.data());
+                });
+                renderPdfRegistryToUI();
+                updatePdfFileCounter();
+            }, (error) => {
+                console.error("Firestore loading error:", error);
+                showToast("Gagal menyelaraskan dokumen dari database.", "danger");
             });
         }
 
-        // CORE ANALYSIS RUNNER ENGAGEMENT (OPTION 1 POWERED)
-        async function executeMarketAnalysis() {
-            const geminiKey = document.getElementById('gemini-key-input').value;
-            const twelveKey = document.getElementById('twervedata-key-input').value;
-            const isSandbox = document.getElementById('sandbox-toggle').checked;
-            
-            if (!isSandbox && (!geminiKey || !twelveKey)) {
-                return alert('Mohon isi Gemini API Key dan TwelveData API Key Anda terlebih dahulu, atau aktifkan "Sandbox Mode" untuk simulasi offline bebas pulsa!');
-            }
+        function subscribeUserHistory(userId) {
+            if (!db) return;
 
-            const asset = document.getElementById('asset-select').value;
-            const count = document.getElementById('candle-size').value;
-            const isBacktest = document.getElementById('backtest-toggle').checked;
-            const backtestDate = document.getElementById('backtest-end-date').value;
+            // RULE 1: STRICT PATH
+            const historyCol = collection(db, 'artifacts', appId, 'users', userId, 'history');
 
-            const checkedTf = Array.from(document.querySelectorAll('input[name="timeframe"]:checked')).map(cb => cb.value);
-            if (checkedTf.length === 0) return alert('Pilih setidaknya satu timeframe analisis!');
-
-            document.getElementById('terminal-placeholder-screen').classList.add('hidden');
-            document.getElementById('terminal-output-screen').classList.add('hidden');
-            document.getElementById('terminal-loading-screen').classList.remove('hidden');
-            
-            document.getElementById('live-log-tracker').innerHTML = "";
-            
-            await appendTerminalLog("Menginisiasi struktur pemicu matriks mesin...", 200);
-            
-            let queryUrlAddendum = "";
-            if (isBacktest && backtestDate) {
-                // Re-format waktu agar sesuai standar query TwelveData (YYYY-MM-DD HH:MM:SS)
-                const cleanDate = backtestDate.replace('T', ' ') + ":00";
-                queryUrlAddendum = `&end_date=${encodeURIComponent(cleanDate)}`;
-                await appendTerminalLog(`Mengaktifkan Opsi 1: Parameter Backtest Tanggal Terdeteksi! Target: [${cleanDate}] NY Time`, 500);
-            } else {
-                await appendTerminalLog("Membaca koordinat bursa live real-time terkini...", 400);
-            }
-
-            for (let tf of checkedTf) {
-                let targetUrl = `https://api.twelvedata.com/time_series?symbol=${asset}&interval=${tf}&outputsize=${count}${queryUrlAddendum}&timezone=America/New_York&apikey=${isSandbox ? 'SANDBOX_KEY' : '***'}`;
-                await appendTerminalLog(`Menembak server TwelveData [TF: ${tf}]. Endpoint: ${targetUrl.substring(0, 75)}...`, 600);
-            }
-
-            if (uploadedFiles.length > 0) {
-                await appendTerminalLog(`Menjalankan modul Multimodal Vision PDF. Mengompilasi ${uploadedFiles.length} file strategi ke dalam konteks token AI...`, 700);
-            } else {
-                await appendTerminalLog("Asimilasi aturan dasar ICT Core Engine (Tanpa Dokumen Eksternal)...", 300);
-            }
-
-            await appendTerminalLog("Mengirimkan payload data lilin gabungan + strategi ke server Google Gemini-1.5...", 600);
-            await appendTerminalLog("Menyusun ulasan konfirmasi struktur pasar, target rasio, dan pemetaan likuiditas...", 500);
-
-            document.getElementById('terminal-loading-screen').classList.add('hidden');
-            document.getElementById('terminal-output-screen').classList.remove('hidden');
-
-            const timeLabel = isBacktest ? `[Masa Lalu Backtest: ${backtestDate.replace('T', ' ')}]` : `[Live Terkini New York Clock]`;
-            const formattedMode = isBacktest ? "BACKTEST ENGINE (OPSI 1)" : "LIVE ANALYSIS MODE";
-            
-            document.getElementById('output-title-text').textContent = `Laporan Khusus ICT - Aset ${asset}`;
-            
-            let generatedReportText = `===========================================================
-📊 LAPORAN ANALISIS MULTI-TIMEFRAME ICT ALGORITMA
-Aset/Instrumen : ${asset}
-Waktu Eksekusi : ${timeLabel}
-Mode Operasi   : ${formattedMode}
-Timeframe Terpilih : ${checkedTf.join(', ')}
-Jumlah Lilin/Bar : ${count} Candlesticks Terakhir
-===========================================================\n\n`;
-
-            if(uploadedFiles.length > 0) {
-                generatedReportText += `📚 ASIMILASI BUKU STRATEGI PDF:\nAI Berhasil membaca dokumen pelengkap [${uploadedFiles.map(f => f.name).join(', ')}]. Mengabaikan tanda air watermark visual dan menerapkan aturan eksklusif Anda ke dalam chart.\n\n`;
-            }
-
-            generatedReportText += `1. STRUKTUR PASAR & KONFIRMASI TEKNIKAL (${checkedTf[0]}):
-   • Bias Utama: BULLISH DISPLACEMENT terdeteksi. Terjadi pergeseran struktur pasar yang valid (Market Structure Shift / MSS) pada rentang data historis penutupan lilin.
-   • Adanya dorongan volume yang kuat meninggalkan area konsolidasi bawah, menunjukkan institusi besar sedang melakukan akumulasi posisi beli.
-
-2. PEMETAAN ZONA LIKUIDITAS & ENTRI (ZONA KUNCI ICT):
-   • Fair Value Gap (FVG): Terdeteksi FVG terbuka pada rentang harga lilin ke-3 hingga ke-5 di masa lalu. Ini merupakan zona magnet harga ideal untuk melakukan koreksi/re-entry.
-   • Order Block (OB): Bullish Order Block terkonfirmasi tepat di bawah area FVG, bersinggungan dengan level support psikologis terdekat.
-
-3. REKOMENDASI EKSEKUSI TAKTIS & PEMBATASAN RISIKO:
-   • Pilihan Aksi: BUY LIMIT di batas atas area Fair Value Gap.
-   • Target Keuntungan (Take Profit): Menargetkan area BSL (Buyside Liquidity) atau level tertinggi terdekat sebelumnya.
-   • Batasan Kerugian (Stop Loss): Diletakkan secara ketat beberapa pips di bawah level terendah struktur Order Block untuk meminimalkan paparan risiko drawdown ekstrem.
-
-===========================================================
-💡 CATATAN BACKTESTING:
-Gunakan fitur 'Bar Replay' di TradingView Anda pada tanggal tersebut untuk melacak pergerakan lilin ke depan dan memvalidasi apakah target keuntungan tersentuh sebelum batas kerugian terpukul!`;
-
-            document.getElementById('active-raw-text').textContent = generatedReportText;
-
-            // Simpan snapshot ke dalam array riwayat lokal
-            const snapshotItem = {
-                id: Date.now(),
-                nyTime: isBacktest ? backtestDate.replace('T', ' ') : new Date().toLocaleTimeString('en-US', {hour12:false}),
-                asset: asset,
-                mode: isBacktest ? "Backtest" : "Live",
-                timeframes: checkedTf.join(', '),
-                fullReport: generatedReportText
-            };
-            
-            globalHistoryList.unshift(snapshotItem);
-            document.getElementById('history-count').textContent = globalHistoryList.length;
+            // RULE 2: No complex queries, manually sort client-side to prevent missing index errors
+            unsubscribeHistory = onSnapshot(historyCol, (snapshot) => {
+                analysisHistory = [];
+                snapshot.forEach((docSnap) => {
+                    analysisHistory.push(docSnap.data());
+                });
+                analysisHistory.sort((a, b) => b.created_at - a.created_at);
+                renderHistoryToUI();
+            }, (error) => {
+                console.error("Firestore loading history error:", error);
+                showToast("Gagal menyelaraskan riwayat analisis dari database.", "danger");
+            });
         }
 
-        function renderHistoryTable() {
-            const tbody = document.getElementById('history-table-body');
-            if (globalHistoryList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-gray-500 italic">Belum ada rekam jejak laporan riwayat analisis pasar yang tersimpan.</td></tr>`;
+        // Save strategy to database (RULE 1) or localStorage
+        async function saveStrategyToFirestore(pdfData) {
+            if (isGuestModeActive) {
+                extractedPdfs.push(pdfData);
+                localStorage.setItem('local_strategies', JSON.stringify(extractedPdfs));
+                renderPdfRegistryToUI();
+                updatePdfFileCounter();
                 return;
             }
 
-            tbody.innerHTML = "";
-            globalHistoryList.forEach((item, index) => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-900/40 transition group border-b border-gray-800/30";
-                
-                const modeStyle = item.mode === "Backtest" 
-                    ? "text-amber-400 bg-amber-500/10 border border-amber-500/20" 
-                    : "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20";
-                
-                tr.innerHTML = `
-                    <td class="py-3.5 pl-2 font-mono text-gray-400">${item.nyTime}</td>
-                    <td class="py-3.5 font-bold text-white">${item.asset}</td>
-                    <td class="py-3.5"><span class="text-[10px] px-2 py-0.5 rounded-md font-semibold ${modeStyle}">${item.mode}</span></td>
-                    <td class="py-3.5 font-mono text-gray-400">${item.timeframes}</td>
-                    <td class="py-3.5 text-right pr-2">
-                        <button onclick="launchHistoryPremiumModal(${index})" class="bg-gray-900 hover:bg-blue-600 border border-gray-800 group-hover:border-blue-500 hover:text-white text-gray-400 px-2.5 py-1 rounded-lg transition text-xs flex items-center gap-1 ml-auto">
-                            <i class="fa-solid fa-eye text-[11px]"></i> Lihat
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
+            if (!db || !auth || !auth.currentUser) return;
+            const userId = auth.currentUser.uid;
+            
+            // RULE 1: STRICT PATH
+            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'strategies', pdfData.id);
+            try {
+                await setDoc(docRef, pdfData);
+            } catch (err) {
+                console.error("Error writing strategy:", err);
+                showToast("Gagal menyimpan strategi ke server.", "danger");
+            }
         }
 
-        function launchHistoryPremiumModal(index) {
-            const item = globalHistoryList[index];
+        async function saveAnalysisToHistory(asset, price, timeframes, outputText) {
+            const historyId = 'hist-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+            
+            let formattedNyTime;
+            try {
+                formattedNyTime = new Date().toLocaleString("sv-SE", { timeZone: "America/New_York" });
+            } catch(e) {
+                formattedNyTime = new Date().toISOString().replace('T', ' ').slice(0, 19);
+            }
+            
+            const historyData = {
+                id: historyId,
+                asset: asset,
+                price: price,
+                timeframes: timeframes,
+                nyTime: formattedNyTime,
+                output: outputText,
+                created_at: Date.now()
+            };
+
+            if (isGuestModeActive) {
+                analysisHistory.unshift(historyData);
+                localStorage.setItem('local_history', JSON.stringify(analysisHistory));
+                renderHistoryToUI();
+                return;
+            }
+
+            if (!db || !auth || !auth.currentUser) return;
+            const userId = auth.currentUser.uid;
+
+            // RULE 1: STRICT PATH
+            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'history', historyId);
+            try {
+                await setDoc(docRef, historyData);
+            } catch (err) {
+                console.error("Error saving history log:", err);
+                showToast("Gagal mendokumentasikan riwayat analisis ke server.", "danger");
+            }
+        }
+
+        // Delete strategy from database (RULE 1) or localStorage
+        async function deleteStrategyFromFirestore(docId) {
+            if (isGuestModeActive) {
+                extractedPdfs = extractedPdfs.filter(pdf => pdf.id !== docId);
+                localStorage.setItem('local_strategies', JSON.stringify(extractedPdfs));
+                renderPdfRegistryToUI();
+                updatePdfFileCounter();
+                return;
+            }
+
+            if (!db || !auth || !auth.currentUser) return;
+            const userId = auth.currentUser.uid;
+
+            // RULE 1: STRICT PATH
+            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'strategies', docId);
+            try {
+                await deleteDoc(docRef);
+            } catch (err) {
+                console.error("Error deleting strategy:", err);
+                showToast("Gagal menghapus strategi dari server.", "danger");
+            }
+        }
+
+        async function deleteHistoryItem(id) {
+            if (isGuestModeActive) {
+                analysisHistory = analysisHistory.filter(item => item.id !== id);
+                localStorage.setItem('local_history', JSON.stringify(analysisHistory));
+                renderHistoryToUI();
+                showToast("Riwayat analisis berhasil dihapus.", "info");
+                return;
+            }
+
+            if (!db || !auth || !auth.currentUser) return;
+            const userId = auth.currentUser.uid;
+
+            // RULE 1: STRICT PATH
+            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'history', id);
+            try {
+                await deleteDoc(docRef);
+                showToast("Riwayat analisis berhasil dihapus dari cloud.", "info");
+            } catch (err) {
+                console.error("Error deleting history:", err);
+                showToast("Gagal menghapus riwayat dari server.", "danger");
+            }
+        }
+
+        // Handle Sign In & Registration Submit Forms
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            if (!isFirebaseInitialized) return;
+
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const submitText = document.getElementById('authSubmitText');
+
+            submitBtn.disabled = true;
+            submitText.innerText = currentAuthMode === 'login' ? "Memasuki Sesi..." : "Mendaftarkan Akun...";
+
+            isGuestModeActive = false; // Reset guest mode on active login attempt
+
+            try {
+                if (currentAuthMode === 'login') {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showToast("Registrasi Berhasil! Sesi Anda telah terhubung.", "success");
+                }
+            } catch (err) {
+                console.error("Auth Failure:", err);
+                let message = "Kombinasi email atau sandi tidak valid.";
+                if (err.code === 'auth/email-already-in-use') message = "Alamat email ini sudah terdaftar.";
+                if (err.code === 'auth/weak-password') message = "Kata sandi minimal berisi 6 karakter.";
+                showToast(message, "danger");
+            } finally {
+                submitBtn.disabled = false;
+                submitText.innerText = currentAuthMode === 'login' ? "Masuk Sekarang" : "Daftarkan Akun Baru";
+            }
+        }
+
+        // Handle Guest Mode (Fallback) Entry
+        function handleGuestEntry() {
+            isGuestModeActive = true;
+            handleGuestModeActivation();
+        }
+
+        function handleGuestModeActivation() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('userEmailBadge').innerText = "Mode Tamu (Offline)";
+            document.getElementById('logoutBtn').classList.add('hidden');
+            document.getElementById('backToLoginBtn').classList.remove('hidden');
+            
+            // Load from localStorage under Guest mode
+            const savedLocalDocs = localStorage.getItem('local_strategies');
+            if (savedLocalDocs) {
+                try {
+                    extractedPdfs = JSON.parse(savedLocalDocs);
+                } catch(e) {
+                    extractedPdfs = [];
+                }
+            } else {
+                extractedPdfs = [];
+            }
+            renderPdfRegistryToUI();
+            updatePdfFileCounter();
+
+            const savedLocalHistory = localStorage.getItem('local_history');
+            if (savedLocalHistory) {
+                try {
+                    analysisHistory = JSON.parse(savedLocalHistory);
+                } catch(e) {
+                    analysisHistory = [];
+                }
+            } else {
+                analysisHistory = [];
+            }
+            renderHistoryToUI();
+            
+            showToast("Masuk sebagai tamu. Dokumen Anda disimpan lokal di browser.", "info");
+        }
+
+        function forceShowLogin() {
+            isGuestModeActive = false;
+            document.getElementById('authScreen').classList.remove('hidden');
+        }
+
+        // Toggle Auth Registration Mode Screen
+        function toggleAuthMode() {
+            const title = document.getElementById('authTitle');
+            const subtitle = document.getElementById('authSubtitle');
+            const submitText = document.getElementById('authSubmitText');
+            const switchText = document.getElementById('authSwitchText');
+            const switchBtn = document.getElementById('authSwitchBtn');
+
+            if (currentAuthMode === 'login') {
+                currentAuthMode = 'register';
+                title.innerText = "Daftar Trader Baru";
+                subtitle.innerText = "Buat akun trading terproteksi Anda sekarang juga";
+                submitText.innerText = "Daftarkan Akun Baru";
+                switchText.innerText = "Sudah memiliki akun?";
+                switchBtn.innerText = "Masuk Sesi";
+            } else {
+                currentAuthMode = 'login';
+                title.innerText = "Sign In Trader";
+                subtitle.innerText = "Akses repositori strategi & analisis multi-dokumen terproteksi";
+                submitText.innerText = "Masuk Sekarang";
+                switchText.innerText = "Belum memiliki akun?";
+                switchBtn.innerText = "Daftar Baru";
+            }
+        }
+
+        // Signout/Logout Action
+        async function handleLogout() {
+            if (!isFirebaseInitialized) return;
+            try {
+                await signOut(auth);
+                showToast("Sesi trading berhasil diakhiri.", "info");
+            } catch (err) {
+                showToast("Gagal mengeluarkan sesi trading.", "danger");
+            }
+        }
+
+        function clearExtractedPdfsState() {
+            extractedPdfs = [];
+            renderPdfRegistryToUI();
+            updatePdfFileCounter();
+        }
+
+        function clearHistoryState() {
+            analysisHistory = [];
+            renderHistoryToUI();
+        }
+
+        function switchTerminalTab(tabName) {
+            const activeTabBtn = document.getElementById('tabBtnActive');
+            const historyTabBtn = document.getElementById('tabBtnHistory');
+            const activePanel = document.getElementById('terminalActivePanel');
+            const historyPanel = document.getElementById('terminalHistoryPanel');
+
+            if (tabName === 'active') {
+                activeTabBtn.className = "px-2.5 py-1 rounded-md text-[10px] font-bold font-mono uppercase tracking-wider transition-all bg-brandAccent text-white flex items-center gap-1";
+                historyTabBtn.className = "px-2.5 py-1 rounded-md text-[10px] font-bold font-mono uppercase tracking-wider transition-all text-zinc-400 hover:text-zinc-200 flex items-center gap-1";
+                activePanel.classList.remove('hidden');
+                historyPanel.classList.add('hidden');
+            } else {
+                activeTabBtn.className = "px-2.5 py-1 rounded-md text-[10px] font-bold font-mono uppercase tracking-wider transition-all text-zinc-400 hover:text-zinc-200 flex items-center gap-1";
+                historyTabBtn.className = "px-2.5 py-1 rounded-md text-[10px] font-bold font-mono uppercase tracking-wider transition-all bg-brandAccent text-white flex items-center gap-1";
+                activePanel.classList.add('hidden');
+                historyPanel.classList.remove('hidden');
+                renderHistoryToUI();
+            }
+        }
+
+        function viewHistoryItem(id) {
+            const item = analysisHistory.find(h => h.id === id);
             if (!item) return;
 
-            document.getElementById('modal-header-title').textContent = `Snapshot Arsip Analisis - ${item.asset}`;
-            document.getElementById('modal-header-meta').textContent = `Waktu Pencatatan (NY): ${item.nyTime} | Mode: ${item.mode} | TF: ${item.timeframes}`;
-            document.getElementById('modal-body-content').textContent = item.fullReport;
+            activeHistoryOutput = item.output;
+            activeHistoryAsset = item.asset;
 
-            document.getElementById('modal-btn-copy').onclick = () => {
-                navigator.clipboard.writeText(item.fullReport);
-                alert('Teks laporan arsip berhasil disalin ke clipboard!');
-            };
+            document.getElementById('modalAssetTitle').innerText = `${item.asset} (@${item.price}) — Sesi NY: ${item.nyTime}`;
+            const modalBody = document.getElementById('historyModalBody');
+            modalBody.innerHTML = `
+                <div class="markdown-body transition-all duration-300">
+                    ${marked.parse(item.output)}
+                </div>
+            `;
 
-            document.getElementById('modal-btn-download').onclick = () => {
-                const blob = new Blob([item.fullReport], { type: 'text/plain;charset=utf-8' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `ICT_Report_${item.asset.replace('/', '_')}_${item.nyTime.replace(/[: ]/g, '_')}.txt`;
-                link.click();
-            };
-
-            document.getElementById('history-premium-modal').classList.remove('hidden');
+            document.getElementById('historyModal').classList.remove('hidden');
+            showToast(`Membuka berkas laporan arsip: ${item.asset}`, 'success');
         }
 
         function closeHistoryModal() {
-            document.getElementById('history-premium-modal').classList.add('hidden');
+            document.getElementById('historyModal').classList.add('hidden');
         }
 
-        function copyOutputContent(elementId) {
-            const text = document.getElementById(elementId).textContent;
-            navigator.clipboard.writeText(text);
-            alert('Sukses menyalin seluruh laporan terminal ke clipboard!');
+        function copyModalContent() {
+            if (!activeHistoryOutput) return;
+            const tempInput = document.createElement("textarea");
+            tempInput.value = activeHistoryOutput;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                showToast("Laporan riwayat berhasil disalin ke clipboard.", "success");
+            } catch(e) {
+                showToast("Gagal menyalin teks laporan.", "danger");
+            }
+            document.body.removeChild(tempInput);
         }
+
+        function downloadModalContent() {
+            if (!activeHistoryOutput) return;
+            const blob = new Blob([activeHistoryOutput], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `Arsip_Laporan_Trading_${activeHistoryAsset}_${Date.now()}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showToast("Arsip laporan berhasil diunduh.", "success");
+        }
+
+        function renderHistoryToUI() {
+            const container = document.getElementById('terminalHistoryPanel');
+            const badge = document.getElementById('historyCounterBadge');
+            
+            badge.innerText = analysisHistory.length;
+            container.innerHTML = '';
+
+            if (analysisHistory.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16 text-zinc-500 flex flex-col items-center justify-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-3xl opacity-20 animate-pulse"></i>
+                        <p class="text-xs font-semibold text-zinc-400">Belum Ada Riwayat Analisis</p>
+                        <p class="text-[10px] text-zinc-600">Jalankan "Mulai Analisis" untuk otomatis menyimpan log.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            analysisHistory.forEach(item => {
+                const tfBadges = item.timeframes.map(tf => `<span class="bg-brandDark/85 border border-brandBorder px-1.5 py-0.5 rounded text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-wide">${tf}</span>`).join(' ');
+                
+                const cardHtml = `
+                    <div class="bg-brandInput/40 border border-brandBorder hover:border-zinc-700/80 p-3 rounded-xl flex items-center justify-between gap-3 transition-all">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-xs font-extrabold text-white font-mono tracking-wider">${item.asset}</span>
+                                <span class="text-[11px] font-mono text-brandSuccess font-bold">@ ${item.price}</span>
+                                <div class="flex gap-1 flex-wrap">${tfBadges}</div>
+                            </div>
+                            <p class="text-[10px] text-zinc-500 font-semibold font-mono mt-1.5 flex items-center gap-1">
+                                <i class="fa-regular fa-calendar text-[9px]"></i> ${item.nyTime} NY Time
+                            </p>
+                        </div>
+                        
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button onclick="viewHistoryItem('${item.id}')" class="bg-zinc-800/80 hover:bg-brandAccent hover:text-white text-zinc-300 p-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1" title="Lihat Laporan">
+                                <i class="fa-regular fa-eye"></i> <span class="hidden sm:inline text-[10px]">Lihat</span>
+                            </button>
+                            <button onclick="deleteHistoryItem('${item.id}')" class="bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-900/20 hover:border-red-500/30 p-2 rounded-lg text-xs transition-all" title="Hapus Riwayat">
+                                <i class="fa-solid fa-trash-can text-[11px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        // Setup Drag and Drop interfaces
+        function setupDragAndDrop() {
+            const area = document.getElementById('dragDropArea');
+            const fileInput = document.getElementById('pdfFileInput');
+
+            area.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                area.classList.add('border-blue-500', 'bg-blue-950/10');
+            });
+
+            area.addEventListener('dragleave', () => {
+                area.classList.remove('border-blue-500', 'bg-blue-950/10');
+            });
+
+            area.addEventListener('drop', (e) => {
+                e.preventDefault();
+                area.classList.remove('border-blue-500', 'bg-blue-950/10');
+                if (e.dataTransfer.files.length > 0) {
+                    processFiles(e.dataTransfer.files);
+                }
+            });
+
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    processFiles(fileInput.files);
+                }
+            });
+        }
+
+        // Distribute array of uploaded PDF documents to corresponding parsing engines
+        async function processFiles(files) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.type !== 'application/pdf') {
+                    showToast(`Berkas ${file.name} dilewati karena bukan PDF.`, "warning");
+                    continue;
+                }
+                showToast(`Mengekstrak materi strategi dari ${file.name}...`, "info");
+                await extractDataFromPdf(file);
+            }
+        }
+
+        async function extractDataFromPdf(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                let extractedText = "";
+                const totalPages = pdf.numPages;
+
+                // Stage 1: Fast Text Extraction Route
+                for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+                    const textItems = textContent.items.map(item => item.str);
+                    extractedText += textItems.join(" ") + "\n";
+                }
+
+                const cleanedText = extractedText.trim();
+                const totalCharCount = cleanedText.length;
+
+                // Decision Boundary: Force Vision mode if page text seems like a scanned paper (poor character recognition)
+                const isProbablyScanned = totalCharCount < 150;
+                const useVisionCore = isVisionModeForced || isProbablyScanned;
+
+                let imagePayloads = [];
+
+                if (useVisionCore) {
+                    showToast(`Sistem mendeteksi dokumen hasil scan / visual. Memulai render gambar beresolusi tinggi...`, "warning");
+                    // Limit processing to first 3 pages to respect Gemini tokens limit and speed up
+                    const limitPages = Math.min(totalPages, 3);
+                    for (let pNum = 1; pNum <= limitPages; pNum++) {
+                        const page = await pdf.getPage(pNum);
+                        const base64Img = await convertPageToPngBase64(page);
+                        imagePayloads.push(base64Img);
+                    }
+                }
+
+                const newDocumentRecord = {
+                    id: 'pdf-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                    name: file.name,
+                    size: file.size,
+                    charCount: totalCharCount,
+                    mode: useVisionCore ? 'vision' : 'text',
+                    text: useVisionCore ? "" : cleanedText,
+                    images: useVisionCore ? imagePayloads : null,
+                    pagesProcessed: totalPages
+                };
+
+                await saveStrategyToFirestore(newDocumentRecord);
+                showToast(`Berhasil memuat strategi: ${file.name}`, "success");
+
+            } catch (err) {
+                console.error("PDF parsing execution failure:", err);
+                showToast(`Gagal mengekstrak berkas PDF: ${file.name}`, "danger");
+            }
+        }
+
+        // Render PDF canvas directly to standard image output base64
+        function convertPageToPngBase64(page) {
+            return new Promise((resolve, reject) => {
+                const viewport = page.getViewport({ scale: 1.5 }); // Higher resolution multiplier
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+
+                page.render(renderContext).promise.then(() => {
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85); // Compress slightly to optimize base64 size
+                    const base64Str = dataUrl.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+                    resolve(base64Str);
+                }).catch(reject);
+            });
+        }
+
+        // Render registry database list items
+        function renderPdfRegistryToUI() {
+            const container = document.getElementById('pdfRegistryContainer');
+            container.innerHTML = '';
+
+            if (extractedPdfs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6 text-zinc-500 flex flex-col items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved text-lg opacity-25"></i>
+                        <p class="text-[9px] font-medium text-zinc-600">Belum ada berkas PDF strategi terunggah.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            extractedPdfs.forEach(pdf => {
+                const sizeKb = (pdf.size / 1024).toFixed(1);
+                const isVision = pdf.mode === 'vision';
+                
+                const card = `
+                    <div class="bg-brandInput/50 border border-brandBorder/80 hover:border-zinc-700/80 rounded-lg p-2.5 flex items-center justify-between gap-3 transition-all">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5">
+                                <i class="fa-solid ${isVision ? 'fa-file-image text-blue-400' : 'fa-file-lines text-emerald-400'} text-xs shrink-0"></i>
+                                <p class="text-[10px] font-bold text-white truncate max-w-[170px]" title="${pdf.name}">${pdf.name}</p>
+                            </div>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[8px] text-zinc-500 font-bold uppercase tracking-wider">${sizeKb} KB</span>
+                                <span class="w-1 h-1 bg-brandBorder rounded-full"></span>
+                                <span class="text-[8px] font-mono text-zinc-400 font-bold">${isVision ? 'VISION OCR' : `${pdf.charCount} CHARS`}</span>
+                            </div>
+                        </div>
+                        <button onclick="removePdf('${pdf.id}')" class="text-zinc-600 hover:text-brandDanger p-1.5 transition-all" title="Hapus Dokumen">
+                            <i class="fa-regular fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', card);
+            });
+        }
+
+        function updatePdfFileCounter() {
+            document.getElementById('pdfFileCounter').innerText = `${extractedPdfs.length} Berkas`;
+        }
+
+        async function removePdf(id) {
+            await deleteStrategyFromFirestore(id);
+            showToast("Materi strategi telah dihapus dari repositori.", "info");
+        }
+
+        // Main function to reload chart widgets and request price quotes on asset selection
+        function handleMarketChange() {
+            const selector = document.getElementById('marketAssetSelector');
+            const customContainer = document.getElementById('customAssetContainer');
+            const tickerTitle = document.getElementById('tickerTitle');
+            const tickerCategory = document.getElementById('tickerCategory');
+            
+            let selectedAsset = selector.value;
+
+            if (selectedAsset === 'CUSTOM') {
+                customContainer.classList.remove('hidden');
+                tickerTitle.innerText = "KUSTOM ASSET";
+                tickerCategory.innerText = "Custom Simbol";
+                return;
+            } else {
+                customContainer.classList.add('hidden');
+            }
+
+            // Parse metadata labels for major default templates
+            let catLabel = "Forex Major";
+            if (selectedAsset === 'SPX' || selectedAsset === 'NDX') catLabel = "Indices Futures";
+            if (selectedAsset === 'XAU/USD' || selectedAsset === 'CL') catLabel = "Commodity Spot";
+
+            tickerTitle.innerText = selectedAsset;
+            tickerCategory.innerText = catLabel;
+
+            // Load TradingView charts visually
+            loadTradingViewWidget(selectedAsset);
+            // Query latest prices
+            queryCurrentMarketPrice(selectedAsset);
+        }
+
+        function applyCustomAsset() {
+            const customInput = document.getElementById('customAssetInput').value.trim().toUpperCase();
+            if (!customInput) {
+                showToast("Simbol kustom tidak boleh kosong.", "warning");
+                return;
+            }
+            const tickerTitle = document.getElementById('tickerTitle');
+            tickerTitle.innerText = customInput;
+            
+            showToast(`Simbol kustom "${customInput}" dipasang.`, "success");
+            loadTradingViewWidget(customInput);
+            queryCurrentMarketPrice(customInput);
+        }
+
+        // Inject dynamic TradingView responsive iframe components
+        function loadTradingViewWidget(assetSymbol) {
+            const containerId = "tradingview-chart-container";
+            const overlay = document.getElementById('chartLoadingOverlay');
+            
+            overlay.classList.remove('hidden');
+            document.getElementById(containerId).innerHTML = "";
+
+            // Format ticker standard conversion mapping for TradingView
+            let tvSymbol = assetSymbol;
+            if (assetSymbol === 'EUR/USD') tvSymbol = "FX:EURUSD";
+            else if (assetSymbol === 'GBP/USD') tvSymbol = "FX:GBPUSD";
+            else if (assetSymbol === 'USD/JPY') tvSymbol = "FX:USDJPY";
+            else if (assetSymbol === 'SPX') tvSymbol = "SP:SPX";
+            else if (assetSymbol === 'NDX') tvSymbol = "NDAQ:NDX";
+            else if (assetSymbol === 'XAU/USD') tvSymbol = "OANDA:XAUUSD";
+            else if (assetSymbol === 'CL') tvSymbol = "NYMEX:CL1!";
+
+            setTimeout(() => {
+                new TradingView.widget({
+                    "autosize": true,
+                    "symbol": tvSymbol,
+                    "interval": "D",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "id",
+                    "toolbar_bg": "#131722",
+                    "enable_publishing": false,
+                    "hide_side_toolbar": false,
+                    "allow_symbol_change": true,
+                    "container_id": containerId,
+                    "studies": [
+                        "RSI@tv-basicstudies",
+                        "MASimple@tv-basicstudies"
+                    ]
+                });
+                overlay.classList.add('hidden');
+            }, 500);
+        }
+
+        // Fetch prices dynamically or simulate Sandbox hashing outputs
+        async function queryCurrentMarketPrice(asset) {
+            const isSandbox = document.getElementById('sandboxToggle').checked;
+            const livePriceEl = document.getElementById('tickerPrice');
+            const volumeEl = document.getElementById('tickerVolume');
+
+            livePriceEl.innerText = "Memuat...";
+            volumeEl.innerText = "Memuat...";
+
+            if (isSandbox) {
+                // Generate deterministic mock price for offline testing
+                let basePrice = 1.08540;
+                let mockVol = "154,230";
+                
+                if (asset.includes('USD/JPY')) basePrice = 156.42;
+                else if (asset.includes('GBP/USD')) basePrice = 1.27210;
+                else if (asset.includes('SPX')) basePrice = 5310.25;
+                else if (asset.includes('NDX')) basePrice = 18620.50;
+                else if (asset.includes('XAU')) basePrice = 2345.80;
+                else if (asset.includes('CL')) basePrice = 78.45;
+                else {
+                    // Hash text characters to create a consistent mock asset price
+                    let hash = 0;
+                    for (let i = 0; i < asset.length; i++) hash = asset.charCodeAt(i) + ((hash << 5) - hash);
+                    basePrice = Math.abs((hash % 1000) / 10).toFixed(4);
+                }
+
+                // Random jitter variance simulated around pricing index
+                const jitter = (Math.random() - 0.5) * (basePrice * 0.001);
+                const finalSimulatedPrice = (parseFloat(basePrice) + jitter);
+                
+                let decimalPlaces = 5;
+                if (asset.includes('JPY') || asset.includes('CL')) decimalPlaces = 2;
+                if (asset.includes('SPX') || asset.includes('NDX') || asset.includes('XAU')) decimalPlaces = 2;
+
+                livePriceEl.innerText = finalSimulatedPrice.toFixed(decimalPlaces);
+                volumeEl.innerText = mockVol + " Lots (SIM)";
+                return;
+            }
+
+            // Live API query using TwelveData fetch protocol
+            const twelvedataApiKey = document.getElementById('marketApiKey').value.trim();
+            if (!twelvedataApiKey) {
+                livePriceEl.innerText = "API Key Kosong";
+                volumeEl.innerText = "Sandbox off";
+                return;
+            }
+
+            // Encode simbol secara aman agar garis miring terkirim utuh (misal: EUR%2FUSD)
+            const cleanQuery = encodeURIComponent(asset);
+            const targetUrl = `https://api.twelvedata.com/quote?symbol=${cleanQuery}&apikey=${twelvedataApiKey}`;
+
+            try {
+                const response = await fetch(targetUrl);
+                const data = await response.json();
+                
+                if (data.code && data.code !== 200) {
+                    throw new Error(data.message || "Twelvedata verification error.");
+                }
+
+                livePriceEl.innerText = parseFloat(data.close || data.price || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 5});
+                volumeEl.innerText = parseInt(data.volume || 0).toLocaleString() + " Lots";
+
+            } catch (err) {
+                console.error("Live TwelveData Query Failure:", err);
+                livePriceEl.innerText = "Gagal Ambil";
+                volumeEl.innerText = "Periksa API Key";
+                showToast("TwelveData API gagal memproses permintaan. SandBox otomatis disarankan.", "warning");
+            }
+        }
+
+        // Generate historic multi-timeframe candles arrays (Fixed Signature for Option 1)
+        async function fetchOHLCDataForTimeframe(asset, interval, apiKey, isSandbox, isBacktest, backtestDate) {
+            // Mapping UI checkboxes to TwelveData standard parameters
+            let cleanInterval = interval;
+            
+            // Map common shorthand intervals to TwelveData API specifications
+            if (interval === '1m') cleanInterval = '1min';
+            else if (interval === '5m') cleanInterval = '5min';
+            else if (interval === '15m') cleanInterval = '15min';
+            else if (interval === '1d') cleanInterval = '1day';
+            else if (interval === '1w') cleanInterval = '1week';
+            else if (interval === '1month') cleanInterval = '1month';
+            
+            if (isSandbox) {
+                return generateSandboxOHLCCandles(asset, cleanInterval, isBacktest, backtestDate);
+            }
+
+            const cleanQuery = encodeURIComponent(asset);
+            let url = `https://api.twelvedata.com/time_series?symbol=${cleanQuery}&interval=${cleanInterval}&outputsize=12&timezone=America/New_York&apikey=${apiKey}`;
+
+            // OPTION 1: Append end_date if backtest mode is active
+            if (isBacktest && backtestDate) {
+                const cleanDate = backtestDate.replace('T', ' ') + ':00';
+                url += `&end_date=${encodeURIComponent(cleanDate)}`;
+            }
+
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (!data.values || data.status === "error") {
+                throw new Error(data.message || `TwelveData failed on ${cleanInterval}.`);
+            }
+
+            return data.values.map(val => ({
+                datetime: val.datetime,
+                open: parseFloat(val.open),
+                high: parseFloat(val.high),
+                low: parseFloat(val.low),
+                close: parseFloat(val.close),
+                volume: parseInt(val.volume || 0)
+            }));
+        }
+
+        // Programmatic deterministic simulated candles mapping with strict NY Time alignments (Integrated with Backtest Mode)
+        function generateSandboxOHLCCandles(asset, interval, isBacktest, backtestDate) {
+            let basePrice = 1.08500;
+            let variance = 0.0010;
+
+            if (asset.includes('JPY')) { basePrice = 156.00; variance = 0.20; }
+            else if (asset.includes('SPX')) { basePrice = 5300.00; variance = 5.00; }
+            else if (asset.includes('NDX')) { basePrice = 18600.00; variance = 20.00; }
+            else if (asset.includes('XAU')) { basePrice = 2340.00; variance = 3.00; }
+            else if (asset.includes('CL')) { basePrice = 78.00; variance = 0.15; }
+
+            const candles = [];
+            // Calculate timestamps step-interval shifts
+            let minutesStep = 15;
+            if (interval === '1m' || interval === '1min') minutesStep = 1;
+            if (interval === '5m' || interval === '5min') minutesStep = 5;
+            if (interval === '1h') minutesStep = 60;
+            if (interval === '4h') minutesStep = 240;
+            if (interval === '1d' || interval === '1day') minutesStep = 1440;
+            if (interval === '1w' || interval === '1week') minutesStep = 10080;
+            if (interval === '1month') minutesStep = 43200;
+
+            let prevClose = basePrice;
+            
+            // Set base target time based on backtest settings
+            const now = (isBacktest && backtestDate) ? new Date(backtestDate) : new Date();
+
+            for (let i = 0; i < 12; i++) {
+                // Diperbaiki: Selisih waktu dikurangi dari waktu New York murni untuk mengunci offset tanggal
+                const candleTime = new Date(now.getTime() - (i * minutesStep * 60 * 1000));
+                const formattedTime = candleTime.toLocaleString("sv-SE", { timeZone: "America/New_York" });
+                
+                const open = prevClose + (Math.random() - 0.5) * variance;
+                const close = open + (Math.random() - 0.45) * variance; // slight bullish bias
+                const high = Math.max(open, close) + Math.random() * (variance * 0.5);
+                const low = Math.min(open, close) - Math.random() * (variance * 0.5);
+                const volume = Math.floor(25000 + Math.random() * 75000);
+
+                candles.push({
+                    datetime: formattedTime,
+                    open: parseFloat(open.toFixed(5)),
+                    high: parseFloat(high.toFixed(5)),
+                    low: parseFloat(low.toFixed(5)),
+                    close: parseFloat(close.toFixed(5)),
+                    volume: volume
+                });
+
+                prevClose = open;
+            }
+            return candles;
+        }
+
+        // Direct fetch request mapping payload to official Google AI Endpoint
+        async function callGeminiMultimodal(apiKey, model, payloadParts) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: payloadParts
+                        }
+                    ]
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error?.message || "Gemini endpoint server error.");
+            }
+
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        function renderAnalysisToTerminal(markdownText) {
+            const container = document.getElementById('terminalActivePanel');
+            container.innerHTML = `
+                <div class="markdown-body transition-all duration-300">
+                    ${marked.parse(markdownText)}
+                </div>
+            `;
+        }
+
+        // Real-time progressively logged progress step renderer inside animation console
+        function updateProgressStep(stepText) {
+            const tracker = document.getElementById('live-log-tracker-container');
+            if (tracker) {
+                const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const logHtml = `
+                    <div class="flex items-start gap-1.5 text-zinc-300 font-mono text-[9px] animate-fade-in">
+                        <span class="text-emerald-500">✓</span>
+                        <span>[${time}] ${stepText}</span>
+                    </div>
+                `;
+                tracker.insertAdjacentHTML('beforeend', logHtml);
+                tracker.scrollTop = tracker.scrollHeight;
+            }
+        }
+
+        function setLoadingState(active) {
+            isAnalyzingState = active;
+            const btn = document.getElementById('startAnalysisBtn');
+            const text = document.getElementById('btnLoaderText');
+            const icon = document.getElementById('btnLoaderIcon');
+            const terminal = document.getElementById('terminalActivePanel');
+
+            if (active) {
+                btn.disabled = true;
+                btn.className = "w-full bg-zinc-800 text-zinc-500 py-3 rounded-xl text-xs font-bold transition-all cursor-not-allowed flex items-center justify-center gap-2 font-mono uppercase tracking-wider";
+                text.innerText = "Otak AI sedang memproses...";
+                icon.className = "fa-solid fa-circle-notch animate-spin text-brandAccent";
+
+                // Memperbarui visual Terminal Aktif dengan Loader Animasi Interaktif & Log Konsol Real-time
+                terminal.innerHTML = `
+                    <div class="flex flex-col items-center justify-center text-center py-20 h-full space-y-4">
+                        <div class="relative">
+                            <div class="w-16 h-16 rounded-full border-4 border-brandAccent/10 border-t-brandAccent animate-spin"></div>
+                            <i class="fa-solid fa-brain text-2xl text-brandAccent absolute inset-0 flex items-center justify-center animate-pulse"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <h4 class="text-xs font-black text-white uppercase tracking-widest font-mono">Menghubungkan Otak AI...</h4>
+                            <p class="text-[10px] text-zinc-500 font-medium max-w-xs leading-relaxed">Mengevaluasi modul strategi, menyelaraskan multi-timeframe, dan mengalkulasi level kunci teknikal real-time.</p>
+                        </div>
+                        <div class="bg-brandDark/80 border border-brandBorder/60 px-4 py-3 rounded-xl flex flex-col gap-1.5 max-w-md w-full text-left font-mono text-[9px]">
+                            <div class="flex items-center gap-2 border-b border-brandBorder pb-1 mb-1 text-zinc-500">
+                                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                                <span>LOG PROSES AKTIF</span>
+                            </div>
+                            <div id="live-log-tracker-container" class="space-y-1 max-h-[80px] overflow-y-auto">
+                                <!-- Dynamic logs appended here line-by-line -->
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                btn.disabled = false;
+                btn.className = "w-full bg-brandAccent hover:bg-brandAccentHover text-white py-3 rounded-xl text-xs font-bold transition-all shadow-lg shadow-brandAccent/25 flex items-center justify-center gap-2 font-mono uppercase tracking-wider";
+                text.innerText = "Mulai Analisis Pasar";
+                icon.className = "fa-solid fa-play";
+            }
+        }
+
+        function copyToClipboard() {
+            const textContainer = document.getElementById('terminalActivePanel');
+            const textToCopy = textContainer.innerText;
+
+            if (textToCopy.includes("Menunggu Instruksi Analisis Anda")) {
+                showToast("Tidak ada laporan analisis aktif yang dapat disalin.", "warning");
+                return;
+            }
+
+            const tempInput = document.createElement("textarea");
+            tempInput.value = textToCopy;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast("Laporan berhasil disalin ke clipboard.", "success");
+            } catch(e) {
+                showToast("Gagal menyalin teks laporan.", "danger");
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        function downloadReportAsText() {
+            const textContainer = document.getElementById('terminalActivePanel');
+            const textContent = textContainer.innerText;
+
+            if (textContent.includes("Menunggu Instruksi Analisis Anda")) {
+                showToast("Tidak ada laporan analisis aktif yang dapat diunduh.", "warning");
+                return;
+            }
+
+            const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `AI_Trading_Report_${Date.now()}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showToast("Berkas laporan TXT berhasil diunduh.", "success");
+        }
+
+        // Core Execution Pipeline to trigger strategic multi-timeframe analytical reports
+        async function startFullAnalysis() {
+            const geminiKey = document.getElementById('geminiApiKey').value.trim();
+            const modelName = document.getElementById('geminiModelSelector').value;
+            
+            if (!geminiKey) {
+                showToast("Harap masukkan Gemini API Key terlebih dahulu.", "warning");
+                return;
+            }
+
+            const selector = document.getElementById('marketAssetSelector');
+            let selectedMarket = selector.value;
+            if (selectedMarket === 'CUSTOM') {
+                selectedMarket = document.getElementById('customAssetInput').value.trim().toUpperCase();
+                if (!selectedMarket) {
+                    showToast("Harap isi simbol kustom terlebih dahulu.", "warning");
+                    return;
+                }
+            }
+
+            const priceVal = document.getElementById('tickerPrice').innerText;
+            const liveNyTime = document.getElementById('system-time').innerText;
+            const isSandbox = document.getElementById('sandboxToggle').checked;
+            const marketApiKey = document.getElementById('marketApiKey').value.trim();
+            
+            // Get selected multi-timeframe checkboxes
+            const selectedTfs = Array.from(document.querySelectorAll('input[name="tfAnalyze"]:checked')).map(el => el.value);
+            if (selectedTfs.length === 0) {
+                showToast("Harap pilih minimal satu Timeframe untuk dianalisis.", "warning");
+                return;
+            }
+            
+            // Collect text inputs
+            const customInstruction = document.getElementById('customInstructionInput').value.trim();
+
+            setLoadingState(true);
+            switchTerminalTab('active'); // Auto-switch to active terminal pane to show progress indicator
+
+            updateProgressStep("Inisialisasi visualisasi terminal...");
+
+            // Get selected backtest options (Opsi 1)
+            const isBacktest = document.getElementById('backtest-toggle').checked;
+            const backtestDate = document.getElementById('backtest-end-date').value;
+
+            if (isBacktest && backtestDate) {
+                updateProgressStep(`Backtest Aktif: Membidik data historis berakhir pada [${backtestDate.replace('T', ' ')}] NY Time...`);
+            } else {
+                updateProgressStep("Mengambil data lilin historis real-time...");
+            }
+
+            // Fetch actual/simulated historical OHLC data blocks for ALL chosen timeframes
+            let ohlcPromptContext = "";
+            try {
+                const ohlcResults = await Promise.all(
+                    selectedTfs.map(async (tf) => {
+                        const data = await fetchOHLCDataForTimeframe(selectedMarket, tf, marketApiKey, isSandbox, isBacktest, backtestDate);
+                        return { tf, data };
+                    })
+                );
+
+                // Format candle context for direct strict evaluation by Gemini
+                ohlcResults.forEach(({ tf, data }) => {
+                    ohlcPromptContext += `\n[HISTORI CANDLESTICK (OHLC) - TIMEFRAME ${tf.toUpperCase()}]\n`;
+                    ohlcPromptContext += `Format urutan: Lilin 1 adalah Lilin AKTIF Terbaru saat ini.\n`;
+                    data.forEach((candle, idx) => {
+                        // Mark clearly if this is Bullish or Bearish so AI cannot hallucinate direction
+                        const candleDirection = candle.close >= candle.open ? "BULLISH (HIJAU / CLOSE >= OPEN)" : "BEARISH (MERAH / CLOSE < OPEN)";
+                        ohlcPromptContext += `Lilin ${idx + 1} (${candle.datetime}):\n`;
+                        ohlcPromptContext += `   - Open: ${candle.open}\n`;
+                        ohlcPromptContext += `   - High: ${candle.high}\n`;
+                        ohlcPromptContext += `   - Low: ${candle.low}\n`;
+                        ohlcPromptContext += `   - Close: ${candle.close}\n`;
+                        ohlcPromptContext += `   - Arah Sebenarnya: ${candleDirection}\n`;
+                        ohlcPromptContext += `   - Volume: ${candle.volume}\n`;
+                    });
+                });
+                updateProgressStep(`Berhasil memuat ${selectedTfs.length} Timeframe data lilin.`);
+            } catch (err) {
+                console.error("Gagal mengompilasi data lilin:", err);
+                ohlcPromptContext = "\n[PERINGATAN] Gagal memuat data lilin OHLC secara sempurna. Gunakan asumsi aksi harga terakhir.";
+                showToast("Gagal mengompilasi data lilin: " + err.message, "danger");
+                updateProgressStep("Gagal memuat beberapa data lilin.");
+            }
+
+            updateProgressStep("Asimilasi modul dokumen strategi PDF...");
+
+            // Access text-based strategies
+            const strategyTextContext = extractedPdfs
+                .filter(pdf => pdf.mode === 'text')
+                .map((pdf, idx) => `
+                    === STRATEGY DOCUMENT ${idx+1}: ${pdf.name} (Teks) ===
+                    ${pdf.text}
+                `).join("\n\n");
+
+            // Inform Gemini about visual strategy files
+            const strategyVisionInfo = extractedPdfs
+                .filter(pdf => pdf.mode === 'vision')
+                .map((pdf, idx) => `[File Gambar ${idx+1}: ${pdf.name} - Lembar visual disisipkan langsung sebagai payload gambar di bawah]`)
+                .join("\n");
+
+            updateProgressStep("Mengirim muatan & memicu kalkulasi AI...");
+
+            // Assembly prompt context structures
+            const finalPrompt = `
+                Kamu adalah seorang "Senior Trading Analyst & Senior Risk Manager" di dana lindung hedge fund institusional papan atas global.
+                
+                Tugas utama kamu adalah melakukan analisis teknikal komprehensif, multi-timeframe (Multi-TF Alignment), serta mencocokkan kondisi pasar live saat ini dengan aturan-aturan trading terlampir.
+                
+                [PARAMETRE PASAR LIVE]
+                Simbol: ${selectedMarket}
+                Harga Terakhir: ${priceVal}
+                Tanggal & Waktu Live (New York Time Zone): ${liveNyTime}
+                
+                PENTING UNTUK ANALISIS SESI & SYNC WAKTU (BACA INI DENGAN TELITI!): 
+                - Tanggal & Waktu Live New York di atas dan seluruh data timestamp historis lilin (OHLC) di bawah ini dijamin menggunakan ZONA WAKTU YANG SAMA, yaitu America/New_York (EST/EDT).
+                - TIDAK ADA SELISIH ATAU GAP WAKTU antara Waktu Live di atas dan data lilin. Jadi, jika lilin terbaru menunjukkan waktu yang sangat dekat dengan waktu live di atas, itu adalah lilin yang sedang berjalan (real-time). Jangan berasumsi ada loncatan sesi atau salah mengira ada timezone mismatch!
+                - Gunakan "Tanggal & Waktu Live NY" di atas untuk menilai sesi pasar yang sedang berjalan (apakah Sesi New York, Sesi London, atau Sesi Asia sedang berjalan). Analisis bagaimana jam perdagangan aktif saat ini memengaruhi likuiditas, volatilitas, dan potensi manipulasi harga (seperti sesi pembukaan, pemburu likuiditas, dll) sesuai dengan aturan strategi PDF Anda.
+                
+                [TIMEFRAME UTAMA YANG HARUS DIANALISIS]
+                Timeframe Terpilih: ${selectedTfs.join(", ").toUpperCase()}
+                
+                [DATA HISTORIS LILIN REAL-TIME / HISTORICAL CANDLES]
+                Berikut adalah data OHLC aktual dari server. Lakukan pembacaan Price Action secara presisi berdasarkan angka-angka ini. Jangan berhalusinasi:
+                ${ohlcPromptContext}
+
+                Instruksi Evaluasi Candlestick (PENTING!):
+                - Periksa hubungan nilai Open vs Close untuk masing-masing lilin di atas. Jika Close lebih tinggi dari Open, lilin tersebut 100% BULLISH. Jika Close lebih rendah dari Open, lilin tersebut 100% BEARISH. Evaluasi ini harus tercermin akurat pada laporan analisis Anda.
+                - Sumbu atas (High - Max(Open, Close)) dan sumbu bawah (Min(Open, Close) - Low) harus diperiksa untuk menilai penolakan harga (Rejection / Pinbar).
+                - Lakukan analisis top-down (Top-Down Analysis). Ambil timeframe terbesar yang dipilih sebagai jangkar tren utama (Major Trend Bias).
+                - Gunakan timeframe menengah untuk mengonfirmasi perpindahan struktur pasar (Market Structure Shift / Break of Structure).
+                - Gunakan timeframe terkecil dari daftar pilihan sebagai penentu koordinat pemicu entri yang sangat tajam (Entry Trigger Execution).
+                
+                [STRATEGI YANG DIEKSTRAK DARI DOKUMEN TEXT PENGGUNA]
+                ${strategyTextContext.length > 0 ? strategyTextContext : "Tidak ada berkas teks langsung."}
+                
+                [DOKUMEN STRATEGI BERBASIS GAMBAR / WATERMARK]
+                ${strategyVisionInfo.length > 0 ? strategyVisionInfo + "\n\nINSTRUKSI KHUSUS VISION: Bacalah lembar lampiran gambar dokumen PDF di bawah dengan seksama. Abaikan segala bentuk watermark (latar belakang tipis, tulisan watermark teks pengganggu) yang tumpang tindih. Fokuslah mengekstrak tabel, diagram, alur panah, dan teks petunjuk perdagangan murni di dalamnya." : "Tidak ada berkas PDF visual."}
+                
+                [INSTRUKSI/CATATAN TAMBAHAN DARI USER (HIGH PRIORITY)]
+                ${customInstruction.length > 0 ? `BACA DAN PATUHI KETENTUAN KHUSUS BERIKUT: "${customInstruction}"` : "Tidak ada instruksi kustom teks tambahan."}
+
+                Susun laporan taktis yang sangat terperinci dalam format Markdown dengan pembagian bab berikut:
+                1. RINGKASAN EKSEKUTIF & SENTIMEN PASAR (Sesuai dengan korelasi timeframe ${selectedTfs.join(" & ").toUpperCase()})
+                2. ANALISIS ALIGNMENT MULTI-TIMEFRAME (Secara detail bahas pergerakan tren dari TF terbesar hingga TF terkecil yang dipilih, tunjukkan apakah ada divergensi arah atau keselarasan tren murni. Rujuk nilai OHLC lilin di atas untuk membuktikan bias Bullish/Bearish Anda)
+                3. KESELARASAN STRATEGIS (Apakah struktur harga live saat ini sejalan atau melanggar aturan-aturan dalam dokumen PDF/Gambar dan materi instruksi teks tambahan terlampir?)
+                4. ANALISIS LEVEL KUNCI TEKNIKAL (Tentukan Support, Resistance, serta Pivot Point spesifik berdasarkan aksi harga real-time pada interval yang telah dipilih)
+                5. REKOMENDASI TRADING EKSEKUTIF (Tentukan entri, stop loss defensif, level take profit bertahap, rasio risk-to-reward)
+                6. EVALUASI RISIKO & ENJIN KATALIS (Sebutkan risiko makro, parameter emosi, dan peringatan mitigasi modal)
+
+                Harap berikan respons dalam bahasa Indonesia dengan nada profesional, tajam, objektif, tanpa basa-basi pemasaran, dan sangat fokus pada pelestarian modal (capital preservation). Gunakan tabel Markdown jika diperlukan untuk merepresentasikan level harga.
+            `;
+
+            // Prepare Gemini Multimodal Payload
+            const payloadParts = [{ text: finalPrompt }];
+
+            // Push base64 images to payload parts for scanned/watermarked documents
+            extractedPdfs.forEach(pdf => {
+                if (pdf.mode === 'vision' && pdf.images) {
+                    pdf.images.forEach(imgBase64 => {
+                        payloadParts.push({
+                            inlineData: {
+                                mimeType: "image/jpeg",
+                                data: imgBase64
+                            }
+                        });
+                    });
+                }
+            });
+
+            try {
+                // Safeguard: Ensure the API model mapping routes to the allowed preview model
+                const previewModelName = "gemini-2.5-flash-preview-09-2025";
+                updateProgressStep(`Membuka jembatan Google AI model: ${previewModelName}...`);
+                
+                const responseText = await callGeminiMultimodal(geminiKey, previewModelName, payloadParts);
+                renderAnalysisToTerminal(responseText);
+                await saveAnalysisToHistory(selectedMarket, priceVal, selectedTfs, responseText);
+                showToast("Analisis pasar selesai dihitung oleh AI.", "success");
+
+            } catch (err) {
+                console.error("AI API Pipeline execution failure:", err);
+                renderAnalysisToTerminal(`### <i class="fa-solid fa-triangle-exclamation text-brandDanger"></i> Gagal Melakukan Analisis\n\nTerjadi kegagalan saat menghubungi AI API Server.\n\n**Penyebab Detail:**\n\`${err.message}\`\n\n**Solusi Pemecahan:**\n1. Pastikan API key Anda valid dan memiliki kuota limit aktif.`);
+                showToast("Koneksi API AI gagal diproses.", "danger");
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        // Bind functions directly to the global window object to work with inline onclicks/onchanges
+        window.toggleVisibility = toggleVisibility;
+        window.saveCredentials = saveCredentials;
+        window.clearCredentials = clearCredentials;
+        window.toggleSandboxMode = toggleSandboxMode;
+        window.toggleVisionModeSetting = toggleVisionModeSetting;
+        window.handleMarketChange = handleMarketChange;
+        window.applyCustomAsset = applyCustomAsset;
+        window.removePdf = removePdf;
+        window.startFullAnalysis = startFullAnalysis;
+        window.copyToClipboard = copyToClipboard;
+        window.downloadReportAsText = downloadReportAsText;
+        window.dismissToast = dismissToast;
+        window.handleAuthSubmit = handleAuthSubmit;
+        window.toggleAuthMode = toggleAuthMode;
+        window.handleLogout = handleLogout;
+        window.handleGuestEntry = handleGuestEntry;
+        window.forceShowLogin = forceShowLogin;
+        
+        window.switchTerminalTab = switchTerminalTab;
+        window.viewHistoryItem = viewHistoryItem;
+        window.deleteHistoryItem = deleteHistoryItem;
+
+        // Binding fungsi-fungsi modal riwayat mandiri
+        window.closeHistoryModal = closeHistoryModal;
+        window.copyModalContent = copyModalContent;
+        window.downloadModalContent = downloadModalContent;
+
     </script>
 </body>
 </html>
