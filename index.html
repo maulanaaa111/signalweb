@@ -230,6 +230,7 @@
                             <select id="geminiModelSelector" class="w-full bg-brandInput border border-brandBorder rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-brandAccent transition-all appearance-none cursor-pointer">
                                 <option value="gemini-3-flash-preview">Gemini 3 Flash (Terbaru / Rekomendasi)</option>
                                 <option value="gemini-3.5-flash">Gemini 3.5 Flash (Kecerdasan Premium)</option>
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Stabil)</option>
                             </select>
                         </div>
                     </div>
@@ -264,51 +265,26 @@
 
                 <div class="space-y-4">
                     <!-- Dropdown main categorised instruments -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 mb-1">Aset Pasar</label>
-                            <select id="marketAssetSelector" onchange="handleMarketChange()" class="w-full bg-brandInput border border-brandBorder rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition-all cursor-pointer">
-                                <optgroup label="Forex Major Pairs">
-                                    <option value="EUR/USD" selected>EUR/USD (Euro / US Dollar)</option>
-                                    <option value="GBP/USD">GBP/USD (Great Britain Pound / US Dollar)</option>
-                                    <option value="USD/JPY">USD/JPY (US Dollar / Japanese Yen)</option>
-                                </optgroup>
-                                <optgroup label="Index Futures">
-                                    <option value="SPX">S&P 500 (Standard & Poor's)</option>
-                                    <option value="NDX">NASDAQ 100 (Tech Heavy Index)</option>
-                                </optgroup>
-                                <optgroup label="Commodities Spot">
-                                    <option value="XAU/USD">XAU/USD (Gold / US Dollar Spot)</option>
-                                    <option value="CL">WTI Crude Oil (Energi Spot)</option>
-                                </optgroup>
-                                <optgroup label="Manual Setup">
-                                    <option value="CUSTOM">-- TULIS SIMBOL KUSTOM SENDIRI --</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                        
-                        <!-- Backtest Mode Toggle (Opsi 1) -->
-                        <div class="flex flex-col justify-end items-end pb-1">
-                            <label class="relative inline-flex items-center cursor-pointer select-none">
-                                <input type="checkbox" id="backtest-toggle" class="sr-only peer" onchange="toggleBacktestMode()">
-                                <div class="w-9 h-5 bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-450 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
-                                <span class="ml-2 text-[10px] font-bold text-zinc-400 peer-checked:text-amber-400 uppercase tracking-wider">Backtest</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- OPTION 1: DATETIME PICKER (BACKTEST MODE) -->
-                    <div id="backtest-datetime-container" class="hidden border border-amber-500/20 bg-amber-500/5 rounded-xl p-3.5 space-y-3">
-                        <div class="flex items-center justify-between text-[10px] text-amber-400 font-bold uppercase tracking-wider">
-                            <span><i class="fa-solid fa-clock-rotate-left mr-1"></i> Titik Akhir Waktu</span>
-                            <span class="bg-amber-500/20 px-1.5 py-0.5 rounded text-white font-mono">NY Time</span>
-                        </div>
-                        <div>
-                            <input type="datetime-local" id="backtest-end-date" class="w-full bg-brandInput border border-amber-500/30 text-amber-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-amber-500 transition-all">
-                        </div>
-                        <p class="text-[9px] text-zinc-500 leading-relaxed italic">
-                            *TwelveData akan menarik data historis candle tepat sebelum waktu New York di atas.
-                        </p>
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 mb-1">Aset Pasar</label>
+                        <select id="marketAssetSelector" onchange="handleMarketChange()" class="w-full bg-brandInput border border-brandBorder rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition-all cursor-pointer">
+                            <optgroup label="Forex Major Pairs">
+                                <option value="EUR/USD" selected>EUR/USD (Euro / US Dollar)</option>
+                                <option value="GBP/USD">GBP/USD (Great Britain Pound / US Dollar)</option>
+                                <option value="USD/JPY">USD/JPY (US Dollar / Japanese Yen)</option>
+                            </optgroup>
+                            <optgroup label="Index Futures">
+                                <option value="SPX">S&P 500 (Standard & Poor's)</option>
+                                <option value="NDX">NASDAQ 100 (Tech Heavy Index)</option>
+                            </optgroup>
+                            <optgroup label="Commodities Spot">
+                                <option value="XAU/USD">XAU/USD (Gold / US Dollar Spot)</option>
+                                <option value="CL">WTI Crude Oil (Energi Spot)</option>
+                            </optgroup>
+                            <optgroup label="Manual Setup">
+                                <option value="CUSTOM">-- TULIS SIMBOL KUSTOM SENDIRI --</option>
+                            </optgroup>
+                        </select>
                     </div>
 
                     <!-- Hidden text fields container for customized tickers -->
@@ -1470,6 +1446,7 @@
                     "autosize": true,
                     "symbol": tvSymbol,
                     "interval": "D",
+                    "timezone": "America/New_York",
                     "theme": "dark",
                     "style": "1",
                     "locale": "id",
@@ -1558,8 +1535,8 @@
             }
         }
 
-        // Generate historic multi-timeframe candles arrays (Fixed Signature for Option 1)
-        async function fetchOHLCDataForTimeframe(asset, interval, apiKey, isSandbox, isBacktest, backtestDate) {
+        // Generate historic multi-timeframe candles arrays
+        async function fetchOHLCDataForTimeframe(asset, interval, apiKey, isSandbox) {
             // Mapping UI checkboxes to TwelveData standard parameters
             let cleanInterval = interval;
             
@@ -1572,17 +1549,11 @@
             else if (interval === '1month') cleanInterval = '1month';
             
             if (isSandbox) {
-                return generateSandboxOHLCCandles(asset, cleanInterval, isBacktest, backtestDate);
+                return generateSandboxOHLCCandles(asset, cleanInterval);
             }
 
             const cleanQuery = encodeURIComponent(asset);
-            let url = `https://api.twelvedata.com/time_series?symbol=${cleanQuery}&interval=${cleanInterval}&outputsize=12&timezone=America/New_York&apikey=${apiKey}`;
-
-            // OPTION 1: Append end_date if backtest mode is active
-            if (isBacktest && backtestDate) {
-                const cleanDate = backtestDate.replace('T', ' ') + ':00';
-                url += `&end_date=${encodeURIComponent(cleanDate)}`;
-            }
+            const url = `https://api.twelvedata.com/time_series?symbol=${cleanQuery}&interval=${cleanInterval}&outputsize=12&timezone=America/New_York&apikey=${apiKey}`;
 
             const res = await fetch(url);
             const data = await res.json();
@@ -1601,8 +1572,8 @@
             }));
         }
 
-        // Programmatic deterministic simulated candles mapping with strict NY Time alignments (Integrated with Backtest Mode)
-        function generateSandboxOHLCCandles(asset, interval, isBacktest, backtestDate) {
+        // Programmatic deterministic simulated candles mapping with strict NY Time alignments
+        function generateSandboxOHLCCandles(asset, interval) {
             let basePrice = 1.08500;
             let variance = 0.0010;
 
@@ -1624,9 +1595,7 @@
             if (interval === '1month') minutesStep = 43200;
 
             let prevClose = basePrice;
-            
-            // Set base target time based on backtest settings
-            const now = (isBacktest && backtestDate) ? new Date(backtestDate) : new Date();
+            const now = new Date();
 
             for (let i = 0; i < 12; i++) {
                 // Diperbaiki: Selisih waktu dikurangi dari waktu New York murni untuk mengunci offset tanggal
@@ -1688,19 +1657,10 @@
             `;
         }
 
-        // Real-time progressively logged progress step renderer inside animation console
         function updateProgressStep(stepText) {
-            const tracker = document.getElementById('live-log-tracker-container');
-            if (tracker) {
-                const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const logHtml = `
-                    <div class="flex items-start gap-1.5 text-zinc-300 font-mono text-[9px] animate-fade-in">
-                        <span class="text-emerald-500">✓</span>
-                        <span>[${time}] ${stepText}</span>
-                    </div>
-                `;
-                tracker.insertAdjacentHTML('beforeend', logHtml);
-                tracker.scrollTop = tracker.scrollHeight;
+            const stepEl = document.getElementById('analysis-step-log');
+            if (stepEl) {
+                stepEl.innerText = stepText;
             }
         }
 
@@ -1717,7 +1677,7 @@
                 text.innerText = "Otak AI sedang memproses...";
                 icon.className = "fa-solid fa-circle-notch animate-spin text-brandAccent";
 
-                // Memperbarui visual Terminal Aktif dengan Loader Animasi Interaktif & Log Konsol Real-time
+                // Memperbarui visual Terminal Aktif dengan Loader Animasi Interaktif
                 terminal.innerHTML = `
                     <div class="flex flex-col items-center justify-center text-center py-20 h-full space-y-4">
                         <div class="relative">
@@ -1728,14 +1688,9 @@
                             <h4 class="text-xs font-black text-white uppercase tracking-widest font-mono">Menghubungkan Otak AI...</h4>
                             <p class="text-[10px] text-zinc-500 font-medium max-w-xs leading-relaxed">Mengevaluasi modul strategi, menyelaraskan multi-timeframe, dan mengalkulasi level kunci teknikal real-time.</p>
                         </div>
-                        <div class="bg-brandDark/80 border border-brandBorder/60 px-4 py-3 rounded-xl flex flex-col gap-1.5 max-w-md w-full text-left font-mono text-[9px]">
-                            <div class="flex items-center gap-2 border-b border-brandBorder pb-1 mb-1 text-zinc-500">
-                                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-                                <span>LOG PROSES AKTIF</span>
-                            </div>
-                            <div id="live-log-tracker-container" class="space-y-1 max-h-[80px] overflow-y-auto">
-                                <!-- Dynamic logs appended here line-by-line -->
-                            </div>
+                        <div class="bg-brandDark/80 border border-brandBorder/60 px-4 py-2 rounded-xl flex items-center gap-2 max-w-xs w-full">
+                            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                            <span class="text-[9px] font-mono font-bold text-zinc-400 text-left truncate flex-1" id="analysis-step-log">Mengompilasi data lilin historis...</span>
                         </div>
                     </div>
                 `;
@@ -1831,24 +1786,14 @@
             setLoadingState(true);
             switchTerminalTab('active'); // Auto-switch to active terminal pane to show progress indicator
 
-            updateProgressStep("Inisialisasi visualisasi terminal...");
-
-            // Get selected backtest options (Opsi 1)
-            const isBacktest = document.getElementById('backtest-toggle').checked;
-            const backtestDate = document.getElementById('backtest-end-date').value;
-
-            if (isBacktest && backtestDate) {
-                updateProgressStep(`Backtest Aktif: Membidik data historis berakhir pada [${backtestDate.replace('T', ' ')}] NY Time...`);
-            } else {
-                updateProgressStep("Mengambil data lilin historis real-time...");
-            }
+            updateProgressStep("Mengambil data lilin historis real-time...");
 
             // Fetch actual/simulated historical OHLC data blocks for ALL chosen timeframes
             let ohlcPromptContext = "";
             try {
                 const ohlcResults = await Promise.all(
                     selectedTfs.map(async (tf) => {
-                        const data = await fetchOHLCDataForTimeframe(selectedMarket, tf, marketApiKey, isSandbox, isBacktest, backtestDate);
+                        const data = await fetchOHLCDataForTimeframe(selectedMarket, tf, marketApiKey, isSandbox);
                         return { tf, data };
                     })
                 );
@@ -1869,12 +1814,10 @@
                         ohlcPromptContext += `   - Volume: ${candle.volume}\n`;
                     });
                 });
-                updateProgressStep(`Berhasil memuat ${selectedTfs.length} Timeframe data lilin.`);
             } catch (err) {
                 console.error("Gagal mengompilasi data lilin:", err);
                 ohlcPromptContext = "\n[PERINGATAN] Gagal memuat data lilin OHLC secara sempurna. Gunakan asumsi aksi harga terakhir.";
                 showToast("Gagal mengompilasi data lilin: " + err.message, "danger");
-                updateProgressStep("Gagal memuat beberapa data lilin.");
             }
 
             updateProgressStep("Asimilasi modul dokumen strategi PDF...");
@@ -1920,7 +1863,7 @@
 
                 Instruksi Evaluasi Candlestick (PENTING!):
                 - Periksa hubungan nilai Open vs Close untuk masing-masing lilin di atas. Jika Close lebih tinggi dari Open, lilin tersebut 100% BULLISH. Jika Close lebih rendah dari Open, lilin tersebut 100% BEARISH. Evaluasi ini harus tercermin akurat pada laporan analisis Anda.
-                - Sumbu atas (High - Max(Open, Close)) dan sumbu bawah (Min(Open, Close) - Low) harus diperiksa untuk menilai penolakan harga (Rejection / Pinbar).
+                - Hitung sumbu atas (High - Max(Open, Close)) dan sumbu bawah (Min(Open, Close) - Low) untuk menilai penolakan harga (Rejection / Pinbar).
                 - Lakukan analisis top-down (Top-Down Analysis). Ambil timeframe terbesar yang dipilih sebagai jangkar tren utama (Major Trend Bias).
                 - Gunakan timeframe menengah untuk mengonfirmasi perpindahan struktur pasar (Market Structure Shift / Break of Structure).
                 - Gunakan timeframe terkecil dari daftar pilihan sebagai penentu koordinat pemicu entri yang sangat tajam (Entry Trigger Execution).
@@ -1963,14 +1906,10 @@
             });
 
             try {
-                // Safeguard: Ensure the API model mapping routes to the allowed preview model
-                const previewModelName = "gemini-2.5-flash-preview-09-2025";
-                updateProgressStep(`Membuka jembatan Google AI model: ${previewModelName}...`);
-                
-                const responseText = await callGeminiMultimodal(geminiKey, previewModelName, payloadParts);
+                const responseText = await callGeminiMultimodal(geminiKey, modelName, payloadParts);
                 renderAnalysisToTerminal(responseText);
                 await saveAnalysisToHistory(selectedMarket, priceVal, selectedTfs, responseText);
-                showToast("Analisis pasar selesai dihitung oleh AI.", "success");
+                showToast("Analisis pasar strategis selesai diproses.", "success");
 
             } catch (err) {
                 console.error("AI API Pipeline execution failure:", err);
