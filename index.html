@@ -230,7 +230,6 @@
                             <select id="geminiModelSelector" class="w-full bg-brandInput border border-brandBorder rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-brandAccent transition-all appearance-none cursor-pointer">
                                 <option value="gemini-3-flash-preview">Gemini 3 Flash (Terbaru / Rekomendasi)</option>
                                 <option value="gemini-3.5-flash">Gemini 3.5 Flash (Kecerdasan Premium)</option>
-                                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Stabil)</option>
                             </select>
                         </div>
                     </div>
@@ -1768,6 +1767,7 @@
                 }
             }
 
+            const priceVal = document.getElementById('tickerPrice').innerText;
             const liveNyTime = document.getElementById('system-time').innerText;
             const isSandbox = document.getElementById('sandboxToggle').checked;
             const marketApiKey = document.getElementById('marketApiKey').value.trim();
@@ -1789,8 +1789,6 @@
 
             // Fetch actual/simulated historical OHLC data blocks for ALL chosen timeframes
             let ohlcPromptContext = "";
-            let computedPriceVal = ""; // Mengunci variabel murni dari data candle terkecil
-
             try {
                 const ohlcResults = await Promise.all(
                     selectedTfs.map(async (tf) => {
@@ -1799,19 +1797,12 @@
                     })
                 );
 
-                // SINKRONISASI MUTLAK: Ambil candle indeks 0 (terbaru/running) dari timeframe terkecil
-                const smallestTfData = ohlcResults[ohlcResults.length - 1].data;
-                if (smallestTfData && smallestTfData.length > 0) {
-                    computedPriceVal = smallestTfData[0].close; 
-                } else {
-                    computedPriceVal = document.getElementById('tickerPrice').innerText; // Fallback seadanya jika array kosong
-                }
-
-                // Format candle context untuk pembacaan ketat oleh Gemini tanpa halusinasi
+                // Format candle context for direct strict evaluation by Gemini
                 ohlcResults.forEach(({ tf, data }) => {
                     ohlcPromptContext += `\n[HISTORI CANDLESTICK (OHLC) - TIMEFRAME ${tf.toUpperCase()}]\n`;
                     ohlcPromptContext += `Format urutan: Lilin 1 adalah Lilin AKTIF Terbaru saat ini.\n`;
                     data.forEach((candle, idx) => {
+                        // Mark clearly if this is Bullish or Bearish so AI cannot hallucinate direction
                         const candleDirection = candle.close >= candle.open ? "BULLISH (HIJAU / CLOSE >= OPEN)" : "BEARISH (MERAH / CLOSE < OPEN)";
                         ohlcPromptContext += `Lilin ${idx + 1} (${candle.datetime}):\n`;
                         ohlcPromptContext += `   - Open: ${candle.open}\n`;
@@ -1824,8 +1815,7 @@
                 });
             } catch (err) {
                 console.error("Gagal mengompilasi data lilin:", err);
-                ohlcPromptContext = "\n[PERINGATAN] Gagal memuat data lilin OHLC secara sempurna.";
-                computedPriceVal = document.getElementById('tickerPrice').innerText;
+                ohlcPromptContext = "\n[PERINGATAN] Gagal memuat data lilin OHLC secara sempurna. Gunakan asumsi aksi harga terakhir.";
                 showToast("Gagal mengompilasi data lilin: " + err.message, "danger");
             }
 
@@ -1847,111 +1837,83 @@
 
             updateProgressStep("Mengirim muatan & memicu kalkulasi AI...");
 
-            // UPGRADE PROMPT SISTEM: Membentuk AI berpikir terstruktur khas dana lindung (Hedge Fund)
-            const finalPrompt = `Kamu adalah seorang "Chief Market Strategist & Senior Risk Manager" di dana lindung global (Hedge Fund Tier-1). Tugas utama kamu adalah menghasilkan dokumen rekomendasi trading institusional yang super presisi, bebas dari bias emosional, dan didasarkan pada kecocokan absolut antara data pasar live dan aturan strategi (SOP) dari dokumen terlampir.
+            // Assembly prompt context structures
+            const finalPrompt = `
+                Kamu adalah seorang "Senior Trading Analyst & Senior Risk Manager" di dana lindung hedge fund institusional papan atas global.
                 
-[PARAMETRE PASAR LIVE]
-Simbol: ${selectedMarket}
-Harga Terakhir: ${computedPriceVal}
-Tanggal & Waktu Live (New York Time Zone): ${liveNyTime}
+                Tugas utama kamu adalah melakukan analisis teknikal komprehensif, multi-timeframe (Multi-TF Alignment), serta mencocokkan kondisi pasar live saat ini dengan aturan-aturan trading terlampir.
                 
-PENTING UNTUK ANALISIS SESI & SYNC WAKTU: 
-- Tanggal & Waktu Live New York di atas dan seluruh data timestamp historis lilin (OHLC) di bawah ini dijamin menggunakan ZONA WAKTU YANG SAMA, yaitu America/New_York (EST/EDT).
-- TIDAK ADA SELISIH ATAU GAP WAKTU. Jika lilin terbaru menunjukkan waktu mendekati waktu live, itu adalah lilin real-time yang sedang berjalan.
-- Gunakan "Tanggal & Waktu Live NY" untuk menganalisis karakteristik sesi perdagangan yang aktif (Asia, London, New York, London Close, atau Killzone khusus). Evaluasi bagaimana karakteristik sesi ini memengaruhi volatilitas, likuiditas, potensi manipulasi harga (Judas Swing), atau ekspansi harga berdasarkan aturan di dalam PDF.
+                [PARAMETRE PASAR LIVE]
+                Simbol: ${selectedMarket}
+                Harga Terakhir: ${priceVal}
+                Tanggal & Waktu Live (New York Time Zone): ${liveNyTime}
                 
-[TIMEFRAME UTAMA YANG HARUS DIANALISIS]
-Timeframe Terpilih: ${selectedTfs.join(", ").toUpperCase()}
+                PENTING UNTUK ANALISIS SESI & SYNC WAKTU (BACA INI DENGAN TELITI!): 
+                - Tanggal & Waktu Live New York di atas dan seluruh data timestamp historis lilin (OHLC) di bawah ini dijamin menggunakan ZONA WAKTU YANG SAMA, yaitu America/New_York (EST/EDT).
+                - TIDAK ADA SELISIH ATAU GAP WAKTU antara Waktu Live di atas dan data lilin. Jadi, jika lilin terbaru menunjukkan waktu yang sangat dekat dengan waktu live di atas, itu adalah lilin yang sedang berjalan (real-time). Jangan berasumsi ada loncatan sesi atau salah mengira ada timezone mismatch!
+                - Gunakan "Tanggal & Waktu Live NY" di atas untuk menilai sesi pasar yang sedang berjalan (apakah Sesi New York, Sesi London, atau Sesi Asia sedang berjalan). Analisis bagaimana jam perdagangan aktif saat ini memengaruhi likuiditas, volatilitas, dan potensi manipulasi harga (seperti sesi pembukaan, pemburu likuiditas, dll) sesuai dengan aturan strategi PDF Anda.
                 
-[DATA HISTORIS LILIN REAL-TIME / HISTORICAL CANDLES]
-Berikut adalah data OHLC aktual. Lakukan kalkulasi matematis murni, jangan berasumsi:
-${ohlcPromptContext}
-
-INSTRUKSI EVALUASI CANDLESTICK & TOP-DOWN ALIGNMENT (PROSEDUR WAJIB):
-1. Verifikasi Karakter Candle: Validasi hubungan Open vs Close untuk lilin terbaru. Jika Close > Open = BULLISH. Jika Close < Open = BEARISH. Hitung rejection dengan rumus: Sumbu Atas = High - Max(Open, Close); Sumbu Bawah = Min(Open, Close) - Low.
-2. Analisis Top-Down Berurutan: 
-   - Analisis dimulai secara sekuensial dari Timeframe terbesar yang dipilih sebagai "Anchor Trend & Bias" (Major Trend Bias).
-   - Gunakan Timeframe menengah untuk mengidentifikasi perpindahan struktur pasar (Market Structure Shift / Break of Structure / CHoCH).
-   - Gunakan Timeframe terkecil sebagai "Trigger Execution Coordinator" untuk menentukan titik entri yang presisi.
-3. Dilarang Keras Berhalusinasi: Jika data OHLC tidak menunjukkan adanya struktur atau level tertentu, katakan "Data tidak mendeteksi adanya setup". Jangan mengada-ada.
+                [TIMEFRAME UTAMA YANG HARUS DIANALISIS]
+                Timeframe Terpilih: ${selectedTfs.join(", ").toUpperCase()}
                 
-[STRATEGI YANG DIEKSTRAK DARI DOKUMEN TEXT PENGGUNA]
-${strategyTextContext.length > 0 ? strategyTextContext : "Tidak ada berkas teks langsung."}
+                [DATA HISTORIS LILIN REAL-TIME / HISTORICAL CANDLES]
+                Berikut adalah data OHLC aktual dari server. Lakukan pembacaan Price Action secara presisi berdasarkan angka-angka ini. Jangan berhalusinasi:
+                ${ohlcPromptContext}
+
+                Instruksi Evaluasi Candlestick (PENTING!):
+                - Periksa hubungan nilai Open vs Close untuk masing-masing lilin di atas. Jika Close lebih tinggi dari Open, lilin tersebut 100% BULLISH. Jika Close lebih rendah dari Open, lilin tersebut 100% BEARISH. Evaluasi ini harus tercermin akurat pada laporan analisis Anda.
+                - Hitung sumbu atas (High - Max(Open, Close)) dan sumbu bawah (Min(Open, Close) - Low) untuk menilai penolakan harga (Rejection / Pinbar).
+                - Lakukan analisis top-down (Top-Down Analysis). Ambil timeframe terbesar yang dipilih sebagai jangkar tren utama (Major Trend Bias).
+                - Gunakan timeframe menengah untuk mengonfirmasi perpindahan struktur pasar (Market Structure Shift / Break of Structure).
+                - Gunakan timeframe terkecil dari daftar pilihan sebagai penentu koordinat pemicu entri yang sangat tajam (Entry Trigger Execution).
                 
-[DOKUMEN STRATEGI BERBASIS GAMBAR / WATERMARK]
-${strategyVisionInfo.length > 0 ? strategyVisionInfo + "\n\nINSTRUKSI KHUSUS VISION: Bacalah lembar lampiran gambar dokumen PDF di bawah dengan seksama. Abaikan segala bentuk watermark teks/gambar pengganggu. Ekstrak data murni berupa tabel matriks, skema diagram, alur panah, dan teks petunjuk perdagangan utama (seperti aturan proyeksi Standard Deviation / STDV dan konsep OHLC)." : "Tidak ada berkas PDF visual."}
+                [STRATEGI YANG DIEKSTRAK DARI DOKUMEN TEXT PENGGUNA]
+                ${strategyTextContext.length > 0 ? strategyTextContext : "Tidak ada berkas teks langsung."}
                 
-[INSTRUKSI/CATATAN TAMBAHAN DARI USER (HIGH PRIORITY)]
-${customInstruction.length > 0 ? `BACA DAN PATUHI KETENTUAN KHUSUS BERIKUT (WAJIB DIPATUHI DI ATAS ATURAN LAIN): "${customInstruction}"` : "Tidak ada instruksi kustom teks tambahan."}
+                [DOKUMEN STRATEGI BERBASIS GAMBAR / WATERMARK]
+                ${strategyVisionInfo.length > 0 ? strategyVisionInfo + "\n\nINSTRUKSI KHUSUS VISION: Bacalah lembar lampiran gambar dokumen PDF di bawah dengan seksama. Abaikan segala bentuk watermark (latar belakang tipis, tulisan watermark teks pengganggu) yang tumpang tindih. Fokuslah mengekstrak tabel, diagram, alur panah, dan teks petunjuk perdagangan murni di dalamnya." : "Tidak ada berkas PDF visual."}
+                
+                [INSTRUKSI/CATATAN TAMBAHAN DARI USER (HIGH PRIORITY)]
+                ${customInstruction.length > 0 ? `BACA DAN PATUHI KETENTUAN KHUSUS BERIKUT: "${customInstruction}"` : "Tidak ada instruksi kustom teks tambahan."}
 
----
-Format Perintah Output:
-Susun laporan taktis dan profesional dalam format Markdown dengan pembagian bab berikut secara tegas (Hanya gunakan fakta data di atas dan aturan PDF, dilarang menambahkan opini luar):
+                Susun laporan taktis yang sangat terperinci dalam format Markdown dengan pembagian bab berikut:
+                1. RINGKASAN EKSEKUTIF & SENTIMEN PASAR (Sesuai dengan korelasi timeframe ${selectedTfs.join(" & ").toUpperCase()})
+                2. ANALISIS ALIGNMENT MULTI-TIMEFRAME (Secara detail bahas pergerakan tren dari TF terbesar hingga TF terkecil yang dipilih, tunjukkan apakah ada divergensi arah atau keselarasan tren murni. Rujuk nilai OHLC lilin di atas untuk membuktikan bias Bullish/Bearish Anda)
+                3. KESELARASAN STRATEGIS (Apakah struktur harga live saat ini sejalan atau melanggar aturan-aturan dalam dokumen PDF/Gambar dan materi instruksi teks tambahan terlampir?)
+                4. ANALISIS LEVEL KUNCI TEKNIKAL (Tentukan Support, Resistance, serta Pivot Point spesifik berdasarkan aksi harga real-time pada interval yang telah dipilih)
+                5. REKOMENDASI TRADING EKSEKUTIF (Tentukan entri, stop loss defensif, level take profit bertahap, rasio risk-to-reward)
+                6. EVALUASI RISIKO & ENJIN KATALIS (Sebutkan risiko makro, parameter emosi, dan peringatan mitigasi modal)
 
-1. RINGKASAN EKSEKUTIF & SENTIMEN PASAR
-- Berikan kesimpulan arah market saat ini (Bullish / Bearish / Sideways) berdasarkan korelasi multi-timeframe ${selectedTfs.join(" & ").toUpperCase()}.
-- Status Setup: Nyatakan dengan tegas apakah saat ini "SETUP VALID (READY TO TRADE)" atau "NO SETUP (WAIT & SEE)" berdasarkan aturan dokumen strategi.
+                Harap berikan respons dalam bahasa Indonesia dengan nada profesional, tajam, objektif, tanpa basa-basi pemasaran, dan sangat fokus pada pelestarian modal (capital preservation). Gunakan tabel Markdown jika diperlukan untuk merepresentasikan level harga.
+            `;
 
-2. ANALISIS ALIGNMENT MULTI-TIMEFRAME (TOP-DOWN)
-- Bedah pergerakan tren secara runtut dari TF terbesar ke TF terkecil yang dipilih. 
-- Buktikan bias Anda dengan merujuk langsung pada nilai angka OHLC lilin di atas (Sebutkan angka High/Low/Close yang menjadi acuan). Tunjukkan apakah ada keselarasan arah atau divergensi (misal: SMT Divergence jika disebutkan di dokumen/instruksi).
+            // Prepare Gemini Multimodal Payload
+            const payloadParts = [{ text: finalPrompt }];
 
-3. KESELARASAN STRATEGIS (MATRIKS VALIDASI SOP)
-- Buat evaluasi checklist: Apakah struktur harga live saat ini memenuhi atau melanggar aturan spesifik di dalam PDF (seperti proyeksi STDV atau pola manipulasi OHLC)? Jelaskan aturan mana yang terpenuhi dan mana yang belum.
-
-4. ANALISIS LEVEL KUNCI TEKNIKAL & LIKUIDITAS
-- Tentukan level Support, Resistance, Key POI (Point of Interest seperti Order Block/Fair Value Gap jika relevan), serta Pivot Point spesifik berdasarkan aksi harga real-time saat ini. Sajikan dalam bentuk Tabel Markdown yang bersih.
-
-5. REKOMENDASI TRADING INSTITUSIONAL (Hanya diisi jika STATUS SETUP VALID)
-- Tipe Eksekusi: (Buy/Sell/Limit Order)
-- Entry Coordinate: (Harga spesifik atau range harga)
-- Defensive Stop Loss: (Level harga proteksi modal)
-- Take Profit Target: (Sajikan secara bertahap: TP1, TP2, TP3)
-- Rasio Risk-to-Reward (RR): (Wajib dihitung berdasarkan jarak SL dan TP)
-*Jika status "No Setup", tulis bagian ini: "REKOMENDASI: STAND BY - Menunggu konfirmasi harga di level kunci."*
-
-6. EVALUASI RISIKO & MITIGASI MODAL
-- Analisis risiko berdasarkan waktu sesi berjalan saat ini (misal: volatilitas tinggi menjelang pergantian sesi).
-- Berikan instruksi mitigasi modal (Capital Preservation), manajemen psikologis, dan aturan pembatalan setup (Invalidation Level).
-
-Harap berikan respons dalam bahasa Indonesia yang tajam, sangat objektif, dingin, tanpa basa-basi marketing, dan berfokus penuh pada pelestarian modal (capital preservation). Jangan berikan ruang untuk spekulasi.`;
-
-            // Bagian pengiriman data payload 'finalPrompt' ke API Endpoint Gemini kamu...
-            try {
-                // Kumpulkan semua payload gambar dari berkas bertipe 'vision'
-                const visionParts = [];
-                for (const pdf of extractedPdfs.filter(p => p.mode === 'vision')) {
-                    if (pdf.images && pdf.images.length > 0) {
-                        for (const base64Img of pdf.images) {
-                            // Ekstrak data base64 murni tanpa header data URI scheme
-                            const pureBase64 = base64Img.split(',')[1] || base64Img;
-                            visionParts.push({
-                                inlineData: {
-                                    data: pureBase64,
-                                    mimeType: "image/png"
-                                }
-                            });
-                        }
-                    }
+            // Push base64 images to payload parts for scanned/watermarked documents
+            extractedPdfs.forEach(pdf => {
+                if (pdf.mode === 'vision' && pdf.images) {
+                    pdf.images.forEach(imgBase64 => {
+                        payloadParts.push({
+                            inlineData: {
+                                mimeType: "image/jpeg",
+                                data: imgBase64
+                            }
+                        });
+                    });
                 }
+            });
 
-                // Struktur isi isi pesan payload ke Gemini API
-                onst contents = [
-                    {
-                        role: "user",
-                        parts: [
-                            { text: finalPrompt },
-                            ...visionParts
-                        ]
-                    }
-                ];
-
-                // Ubah panggillan fungsi ke 'callGeminiMultimodal' sesuai fungsi asli di html-mu
-                const responseText = await callGeminiMultimodal(geminiKey, geminiModelSelector, contents);
+            try {
+                const responseText = await callGeminiMultimodal(geminiKey, modelName, payloadParts);
                 renderAnalysisToTerminal(responseText);
-            } catch (apiErr) {
-                console.error("Gagal melakukan penarikan inferensi Gemini:", apiErr);
-                showToast("Error Eksekusi AI: " + apiErr.message, "danger");
+                await saveAnalysisToHistory(selectedMarket, priceVal, selectedTfs, responseText);
+                showToast("Analisis pasar strategis selesai diproses.", "success");
+
+            } catch (err) {
+                console.error("AI API Pipeline execution failure:", err);
+                renderAnalysisToTerminal(`### <i class="fa-solid fa-triangle-exclamation text-brandDanger"></i> Gagal Melakukan Analisis\n\nTerjadi kegagalan saat menghubungi AI API Server.\n\n**Penyebab Detail:**\n\`${err.message}\`\n\n**Solusi Pemecahan:**\n1. Pastikan API key Anda valid dan memiliki kuota limit aktif.`);
+                showToast("Koneksi API AI gagal diproses.", "danger");
             } finally {
                 setLoadingState(false);
             }
