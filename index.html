@@ -1947,7 +1947,7 @@ Harap berikan respons dalam bahasa Indonesia yang tajam, sangat objektif, dingin
                 ];
 
                 // Ubah panggillan fungsi ke 'callGeminiMultimodal' sesuai fungsi asli di html-mu
-                const responseText = await callGeminiMultimodal(geminiApiKey, geminiModelSelector, contents);
+                const responseText = await callGeminiMultimodal(geminiKey, geminiModelSelector, contents);
                 renderAnalysisToTerminal(responseText);
             } catch (apiErr) {
                 console.error("Gagal melakukan penarikan inferensi Gemini:", apiErr);
