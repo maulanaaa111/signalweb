@@ -1767,7 +1767,7 @@
                 }
             }
 
-            const priceVal = document.getElementById('tickerPrice').innerText;
+            const priceValOriginal = document.getElementById('tickerPrice').innerText; // kita simpan harga asli UI di variabel lain
             const liveNyTime = document.getElementById('system-time').innerText;
             const isSandbox = document.getElementById('sandboxToggle').checked;
             const marketApiKey = document.getElementById('marketApiKey').value.trim();
@@ -1783,12 +1783,13 @@
             const customInstruction = document.getElementById('customInstructionInput').value.trim();
 
             setLoadingState(true);
-            switchTerminalTab('active'); // Auto-switch to active terminal pane to show progress indicator
+            switchTerminalTab('active'); 
 
             updateProgressStep("Mengambil data lilin historis real-time...");
 
-            // Fetch actual/simulated historical OHLC data blocks for ALL chosen timeframes
             let ohlcPromptContext = "";
+            let priceVal = priceValOriginal; // Default pakai harga UI dulu sebagai fallback
+
             try {
                 const ohlcResults = await Promise.all(
                     selectedTfs.map(async (tf) => {
@@ -1797,12 +1798,19 @@
                     })
                 );
 
-                // Format candle context for direct strict evaluation by Gemini
+                // 🔥 AKAL-AKALANNYA DI SINI:
+                // Ambil data timeframe TERKECIL (ada di baris terakhir array selectedTfs)
+                const smallestTfData = ohlcResults[ohlcResults.length - 1].data;
+                // Paksa variabel priceVal mengambil harga CLOSE dari Lilin 1 (lilin running/aktif)
+                if (smallestTfData && smallestTfData.length > 0) {
+                    priceVal = smallestTfData[0].close; 
+                }
+
+                // Format candle context untuk dikirim ke Gemini
                 ohlcResults.forEach(({ tf, data }) => {
                     ohlcPromptContext += `\n[HISTORI CANDLESTICK (OHLC) - TIMEFRAME ${tf.toUpperCase()}]\n`;
                     ohlcPromptContext += `Format urutan: Lilin 1 adalah Lilin AKTIF Terbaru saat ini.\n`;
                     data.forEach((candle, idx) => {
-                        // Mark clearly if this is Bullish or Bearish so AI cannot hallucinate direction
                         const candleDirection = candle.close >= candle.open ? "BULLISH (HIJAU / CLOSE >= OPEN)" : "BEARISH (MERAH / CLOSE < OPEN)";
                         ohlcPromptContext += `Lilin ${idx + 1} (${candle.datetime}):\n`;
                         ohlcPromptContext += `   - Open: ${candle.open}\n`;
@@ -1815,7 +1823,7 @@
                 });
             } catch (err) {
                 console.error("Gagal mengompilasi data lilin:", err);
-                ohlcPromptContext = "\n[PERINGATAN] Gagal memuat data lilin OHLC secara sempurna. Gunakan asumsi aksi harga terakhir.";
+                ohlcPromptContext = "\n[PERINGATAN] Gagal memuat data lilin OHLC secara sempurna.";
                 showToast("Gagal mengompilasi data lilin: " + err.message, "danger");
             }
 
